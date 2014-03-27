@@ -1,0 +1,259 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		F204994D177A00B6000E3365 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F204994C177A00B6000E3365 /* CoreFoundation.framework */; };
+		F238F39116173EAC002BC4C3 /* tinyXmlFunctions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F238F39016173EAC002BC4C3 /* tinyXmlFunctions.cpp */; };
+		F2ACAC7E153452680010DE39 /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = F2ACAC7D153452680010DE39 /* main.mm */; };
+		F2ACAC80153452680010DE39 /* MidyAX___Param___Mapping_management.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = F2ACAC7F153452680010DE39 /* MidyAX___Param___Mapping_management.1 */; };
+		F2ACAC8D153454140010DE39 /* tinystr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F2ACAC87153454140010DE39 /* tinystr.cpp */; };
+		F2ACAC8E153454140010DE39 /* tinyxml.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F2ACAC89153454140010DE39 /* tinyxml.cpp */; };
+		F2ACAC8F153454140010DE39 /* tinyxmlerror.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F2ACAC8B153454140010DE39 /* tinyxmlerror.cpp */; };
+		F2ACAC90153454140010DE39 /* tinyxmlparser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F2ACAC8C153454140010DE39 /* tinyxmlparser.cpp */; };
+		F2C49E39176CD4C0002CB0D2 /* CoreMIDI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F2C49E38176CD4C0002CB0D2 /* CoreMIDI.framework */; };
+		F2C49E40176CD636002CB0D2 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F2C49E3F176CD636002CB0D2 /* Foundation.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		F2ACAC77153452680010DE39 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+				F2ACAC80153452680010DE39 /* MidyAX___Param___Mapping_management.1 in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		F204994C177A00B6000E3365 /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = System/Library/Frameworks/CoreFoundation.framework; sourceTree = SDKROOT; };
+		F20C3BE715345FCD001332C7 /* AxemlLoader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AxemlLoader.h; sourceTree = "<group>"; };
+		F238F38F16173DC3002BC4C3 /* AXE-FX_XmlLoad.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "AXE-FX_XmlLoad.h"; sourceTree = "<group>"; };
+		F238F39016173EAC002BC4C3 /* tinyXmlFunctions.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tinyXmlFunctions.cpp; sourceTree = "<group>"; };
+		F2ACAC79153452680010DE39 /* MidyAX - Param & Mapping management */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "MidyAX - Param & Mapping management"; sourceTree = BUILT_PRODUCTS_DIR; };
+		F2ACAC7D153452680010DE39 /* main.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = main.mm; sourceTree = "<group>"; };
+		F2ACAC7F153452680010DE39 /* MidyAX___Param___Mapping_management.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = "MidyAX___Param___Mapping_management.1"; sourceTree = "<group>"; };
+		F2ACAC87153454140010DE39 /* tinystr.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = tinystr.cpp; path = tinyxml/tinystr.cpp; sourceTree = "<group>"; };
+		F2ACAC88153454140010DE39 /* tinystr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = tinystr.h; path = tinyxml/tinystr.h; sourceTree = "<group>"; };
+		F2ACAC89153454140010DE39 /* tinyxml.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = tinyxml.cpp; path = tinyxml/tinyxml.cpp; sourceTree = "<group>"; };
+		F2ACAC8A153454140010DE39 /* tinyxml.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = tinyxml.h; path = tinyxml/tinyxml.h; sourceTree = "<group>"; };
+		F2ACAC8B153454140010DE39 /* tinyxmlerror.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = tinyxmlerror.cpp; path = tinyxml/tinyxmlerror.cpp; sourceTree = "<group>"; };
+		F2ACAC8C153454140010DE39 /* tinyxmlparser.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = tinyxmlparser.cpp; path = tinyxml/tinyxmlparser.cpp; sourceTree = "<group>"; };
+		F2C49E38176CD4C0002CB0D2 /* CoreMIDI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMIDI.framework; path = System/Library/Frameworks/CoreMIDI.framework; sourceTree = SDKROOT; };
+		F2C49E3F176CD636002CB0D2 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		F2ACAC76153452680010DE39 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F204994D177A00B6000E3365 /* CoreFoundation.framework in Frameworks */,
+				F2C49E40176CD636002CB0D2 /* Foundation.framework in Frameworks */,
+				F2C49E39176CD4C0002CB0D2 /* CoreMIDI.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		F2ACAC6E153452680010DE39 = {
+			isa = PBXGroup;
+			children = (
+				F204994C177A00B6000E3365 /* CoreFoundation.framework */,
+				F2C49E3F176CD636002CB0D2 /* Foundation.framework */,
+				F2C49E38176CD4C0002CB0D2 /* CoreMIDI.framework */,
+				F2ACAC7C153452680010DE39 /* MidyAX - Param & Mapping management */,
+				F2ACAC7A153452680010DE39 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		F2ACAC7A153452680010DE39 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F2ACAC79153452680010DE39 /* MidyAX - Param & Mapping management */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		F2ACAC7C153452680010DE39 /* MidyAX - Param & Mapping management */ = {
+			isa = PBXGroup;
+			children = (
+				F2ACAC7D153452680010DE39 /* main.mm */,
+				F20C3BE715345FCD001332C7 /* AxemlLoader.h */,
+				F238F39016173EAC002BC4C3 /* tinyXmlFunctions.cpp */,
+				F238F38F16173DC3002BC4C3 /* AXE-FX_XmlLoad.h */,
+				F2ACAC86153452C40010DE39 /* TinyXML */,
+				F2ACAC7F153452680010DE39 /* MidyAX___Param___Mapping_management.1 */,
+			);
+			path = "MidyAX - Param & Mapping management";
+			sourceTree = "<group>";
+		};
+		F2ACAC86153452C40010DE39 /* TinyXML */ = {
+			isa = PBXGroup;
+			children = (
+				F2ACAC87153454140010DE39 /* tinystr.cpp */,
+				F2ACAC88153454140010DE39 /* tinystr.h */,
+				F2ACAC89153454140010DE39 /* tinyxml.cpp */,
+				F2ACAC8A153454140010DE39 /* tinyxml.h */,
+				F2ACAC8B153454140010DE39 /* tinyxmlerror.cpp */,
+				F2ACAC8C153454140010DE39 /* tinyxmlparser.cpp */,
+			);
+			name = TinyXML;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		F2ACAC78153452680010DE39 /* MidyAX - Param & Mapping management */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F2ACAC83153452680010DE39 /* Build configuration list for PBXNativeTarget "MidyAX - Param & Mapping management" */;
+			buildPhases = (
+				F2ACAC75153452680010DE39 /* Sources */,
+				F2ACAC76153452680010DE39 /* Frameworks */,
+				F2ACAC77153452680010DE39 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "MidyAX - Param & Mapping management";
+			productName = "MidyAX - Param & Mapping management";
+			productReference = F2ACAC79153452680010DE39 /* MidyAX - Param & Mapping management */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		F2ACAC70153452680010DE39 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0420;
+			};
+			buildConfigurationList = F2ACAC73153452680010DE39 /* Build configuration list for PBXProject "MidyAX - Param & Mapping management" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = F2ACAC6E153452680010DE39;
+			productRefGroup = F2ACAC7A153452680010DE39 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				F2ACAC78153452680010DE39 /* MidyAX - Param & Mapping management */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		F2ACAC75153452680010DE39 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F2ACAC7E153452680010DE39 /* main.mm in Sources */,
+				F2ACAC8D153454140010DE39 /* tinystr.cpp in Sources */,
+				F2ACAC8E153454140010DE39 /* tinyxml.cpp in Sources */,
+				F2ACAC8F153454140010DE39 /* tinyxmlerror.cpp in Sources */,
+				F2ACAC90153454140010DE39 /* tinyxmlparser.cpp in Sources */,
+				F238F39116173EAC002BC4C3 /* tinyXmlFunctions.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		F2ACAC81153452680010DE39 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		F2ACAC82153452680010DE39 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		F2ACAC84153452680010DE39 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		F2ACAC85153452680010DE39 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		F2ACAC73153452680010DE39 /* Build configuration list for PBXProject "MidyAX - Param & Mapping management" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F2ACAC81153452680010DE39 /* Debug */,
+				F2ACAC82153452680010DE39 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F2ACAC83153452680010DE39 /* Build configuration list for PBXNativeTarget "MidyAX - Param & Mapping management" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F2ACAC84153452680010DE39 /* Debug */,
+				F2ACAC85153452680010DE39 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = F2ACAC70153452680010DE39 /* Project object */;
+}
