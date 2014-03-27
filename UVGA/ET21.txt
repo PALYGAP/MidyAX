@@ -1,0 +1,12 @@
+11
+0  LOOP_LEVEL1   Level 1
+1  LOOP_LEVEL2   Level 2
+2  LOOP_LEVEL3   Level 3
+3  LOOP_LEVEL4   Level 4
+4  LOOP_PAN1   Pan 1
+5  LOOP_PAN2   Pan 2
+6  LOOP_PAN3   Pan 3
+7  LOOP_PAN4   Pan 4
+16  LOOP_LEVEL   Level
+17  LOOP_PAN   Balance
+18  LOOP_BYPASSMODE   Bypass Mode

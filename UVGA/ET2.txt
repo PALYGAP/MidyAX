@@ -1,0 +1,17 @@
+16
+0  COMP_THRESH   Threshold
+1  COMP_RATIO   Ratio
+2  COMP_ATTACK   Attack
+3  COMP_RELEASE   Release
+4  COMP_LEVEL   Level
+5  COMP_KNEE   Knee
+6  COMP_AUTO   Makeup
+7  COMP_PEAKRMS   Detect
+8  COMP_CONTOUR   Filter
+10  COMP_SIDECHAIN   Sidechain Select
+11  COMP_MIX   Mix
+13  COMP_SUSTAIN   Sustain
+14  COMP_BYPASSMODE   Bypass Mode
+15  COMP_DELAYTIME   Look-Ahead
+16  COMP_AUTOMODE   Auto
+17  COMP_EMPHASIS   Emphasis

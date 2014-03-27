@@ -101,11 +101,38 @@ void BCR2000_ManageCC ( byte CC_channel, byte CC_number, byte CC_value )
 #endif    
 
 
+    if( CUSTOMIZE_STATE == true )
+    {
+    	if (  !(CC_number_dec >= 1  && CC_number_dec <= 40) and CC_number_dec != BCR2000_CUSTOMIZE_CC_DEFINE ) 
+        {return;}
+        
+	// Process customization of the 32 encoders/8 encoder buttons for the Effect Control Page
+        
+    }
+
+
     // CUSTOMIZE button has been preset
     if (  CC_number_dec == BCR2000_CUSTOMIZE_CC_DEFINE )
     {
-      if( CUSTOMIZE_STATE == false ) { CUSTOMIZE_STATE = true; }
-      else { CUSTOMIZE_STATE = false;  }
+      if( CUSTOMIZE_STATE == false )
+      { 
+      	// Make sure that the current page is an Effect Control Page or Quick Access pages
+	
+	if test OK
+	CUSTOMIZE_STATE = true; 
+	Light up the Button
+	
+	
+	if not 
+	CUSTOMIZE_STATE = false;
+      	Light down the Button
+      	endif	
+      }
+      else 
+      { 
+      	CUSTOMIZE_STATE = false;  
+      	Light down the Button
+      }
       
       return;
     }
@@ -133,13 +160,6 @@ void BCR2000_ManageCC ( byte CC_channel, byte CC_number, byte CC_value )
 
       // FLASH ON LED to mark message being processed
       digitalWrite(parValueLedPin, HIGH);
-
-      // Process customization of the 32 encoders/8 encoder buttons for the Effect Control Page
-      if( CUSTOMIZE_STATE == true )
-      {
-        // Make sure that the current page is an Effect Control Page
-        
-      }
 
 
       ////////////////////////////////////////////

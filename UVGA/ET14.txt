@@ -1,0 +1,11 @@
+10
+0  WAH_TYPE   Filter Type
+1  WAH_FSTART   Frequency Min
+2  WAH_FSTOP   Frequency Max
+3  WAH_Q   Resonance
+4  WAH_TRACK   Tracking
+5  WAH_FREQ   Control
+6  WAH_LEVEL   Level
+7  WAH_PAN   Balance
+8  WAH_BYPASSMODE   Bypass Mode
+10  WAH_DRIVE   Drive

@@ -1,0 +1,10 @@
+9
+0  RINGMOD_COARSE   Frequency
+1  RINGMOD_FINE   Frequency multiplier
+2  RINGMOD_TRACK   Track
+3  RINGMOD_LOWCUT   High Cut
+4  RINGMOD_MIX   Mix
+5  RINGMOD_LEVEL   Level
+6  RINGMOD_PAN   Balance
+7  RINGMOD_BYPASSMODE   Bypass Mode
+8  RINGMOD_GLOBALMIX   Global Mix

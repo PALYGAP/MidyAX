@@ -1,0 +1,17 @@
+16
+0  ROTARY_RATE   Rate
+1  ROTARY_LFDEPTH   Low Rotor Depth
+2  ROTARY_HFDEPTH   Hi Rotor Depth
+3  ROTARY_HFLEVEL   Hi Rotor Level
+4  ROTARY_TEMPO   Tempo
+5  ROTARY_MIX   Mix
+6  ROTARY_LEVEL   Level
+7  ROTARY_PAN   Balance
+8  ROTARY_BYPASSMODE   Bypass Mode
+10  ROTARY_HFLENGTH   Hi Rotor Horn Length
+12  ROTARY_WIDTH   HF Mic Spacing
+13  ROTARY_LOWMULT   Low Rate Mult
+14  ROTARY_LOWTIME   Low Time Const
+15  ROTARY_HIGHTIME   Hi Time Const
+16  ROTARY_LFWIDTH   LF Mic Spacing
+17  ROTARY_DRIVE   Drive

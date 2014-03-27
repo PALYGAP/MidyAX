@@ -1,0 +1,9 @@
+8
+0  VOLUME_GAIN   Volume
+1  VOLUME_BAL   Balance
+2  VOLUME_TAPER   Volume Taper
+4  VOLUME_PANL   Pan Left
+5  VOLUME_PANR   Pan Right
+6  VOLUME_LEVEL   Level
+7  VOLUME_BYPASSMODE   Bypass Mode
+8  VOLUME_INPUTMODE   Input Select

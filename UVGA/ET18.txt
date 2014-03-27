@@ -1,0 +1,14 @@
+13
+0  FILTER_TYPE   Type
+1  FILTER_FREQ   Frequency
+2  FILTER_Q   Q
+3  FILTER_GAIN   Gain
+4  FILTER_LEVEL   Level
+5  FILTER_BAL   Balance
+6  FILTER_BYPASSMODE   Bypass Mode
+7  FILTER_ORDER   Order
+9  FILTER_PANL   Pan Left
+10  FILTER_PANR   Pan Right
+11  FILTER_PHASE   Invert
+12  FILTER_LOWCUT   Lowcut
+13  FILTER_HICUT   Hicut

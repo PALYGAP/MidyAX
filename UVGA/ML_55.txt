@@ -1,0 +1,4 @@
+3
+DUAL
+BOTH
+PING-PONG

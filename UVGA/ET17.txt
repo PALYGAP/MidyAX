@@ -1,0 +1,83 @@
+82
+1  PITCH_PITCHMODE   Mode
+2  PITCH_CTRL   Master Pitch
+3  PITCH_UCTRL   Control
+4  PITCH_HARM1   Voice1 Harmony
+5  PITCH_HARM2   Voice2 Harmony
+6  PITCH_KEY   Key
+7  PITCH_SCALE   Scale
+8  PITCH_MODE   Track Mode
+9  PITCH_DETUNE1   Voice1 Detune
+10  PITCH_DETUNE2   Voice2 Detune
+11  PITCH_SHIFT1   Start
+12  PITCH_SHIFT2   Stop
+13  PITCH_LEVEL1   Level 1
+14  PITCH_LEVEL2   Level 2
+15  PITCH_PAN1   Pan 1
+16  PITCH_PAN2   Pan 2
+17  PITCH_DELAY1   Delay 1
+18  PITCH_DELAY2   Delay 2
+19  PITCH_FEEDBACK1   Feedback 1
+20  PITCH_FEEDBACK2   Feedback 2
+21  PITCH_TRACKMODE   Pitch track
+22  PITCH_TRACKING   Track Adjust
+23  PITCH_MIX   Mix
+24  PITCH_LEVEL   Level
+25  PITCH_PAN   Balance
+26  PITCH_BYPASSMODE   Bypass Mode
+28  PITCH_GAIN   Input Gain
+30  PITCH_XFADE   Crossfade
+31  PITCH_SPLICE1   V1 Splice
+32  PITCH_SPLICE2   V2 Splice
+33  PITCH_DTEMPO1   Tempo 1
+34  PITCH_DTEMPO2   Delay Tempo 2
+35  PITCH_STEMPO1   Spltempo 1
+36  PITCH_STEMPO2   Spltempo 2
+37  PITCH_FBTYPE   Feedback type
+38  PITCH_DIRECTION   Reverse
+39  PITCH_LPFREQ   Hi Cut Frequency
+40  PITCH_GLIDE   Glide Time
+41  PITCH_MDELAY   Master Delay
+42  PITCH_MFDBK   Master Feedback
+43  PITCH_MPAN   Master Pan
+44  PITCH_MLEVEL   Master Level
+45  PITCH_CUSTOMNOTE   Custom Notes
+46  PITCH_NOTE2   Note 2
+47  PITCH_NOTE3   Note 3
+48  PITCH_NOTE4   Note 4
+49  PITCH_NOTE5   Note 5
+50  PITCH_NOTE6   Note 6
+51  PITCH_NOTE7   Note 7
+52  PITCH_NOTE8   Note 8
+53  PITCH_CUSTOMSCALE1   Voice 1 Scale
+54  PITCH_CUSTOMSCALE2   Voice 2 Scale
+55  PITCH_NUMSTEPS   Stages
+56  PITCH_NUMREPEATS   Repeats
+57  PITCH_ARPRUN   Run
+58  PITCH_TEMPO   Tempo
+59  PITCH_STEP1     Stage 1   Shift
+60  PITCH_STEP2     Stage 2   Shift
+61  PITCH_STEP3     Stage 3   Shift
+62  PITCH_STEP4     Stage 4   Shift
+63  PITCH_STEP5     Stage 5   Shift
+64  PITCH_STEP6     Stage 6   Shift
+65  PITCH_STEP7     Stage 7   Shift
+66  PITCH_STEP8     Stage 8   Shift
+67  PITCH_STEP9     Stage 9   Shift
+68  PITCH_STEP10     Stage 10  Shift
+69  PITCH_STEP11     Stage 11  Shift
+70  PITCH_STEP12     Stage 12  Shift
+71  PITCH_STEP13     Stage 13  Shift
+72  PITCH_STEP14     Stage 14  Shift
+73  PITCH_STEP15     Stage 15  Shift
+74  PITCH_STEP16     Stage 16  Shift
+75  PITCH_AMPSHAPE   Amplitude Shape
+76  PITCH_AMPALPHA   Amplitude Alpha
+77  PITCH_PANSHAPE   Pan Shape
+78  PITCH_PANALPHA   Pan Alpha
+79  PITCH_TIME1   Delay 1
+80  PITCH_TIME2   Delay 2
+81  PITCH_SOURCE   Pitch Source
+82  PITCH_INMODE   Input Mode
+83  PITCH_LEARN   Learn
+84  PITCH_LOCUT   Low Cut Frequency

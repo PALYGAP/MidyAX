@@ -1,0 +1,6 @@
+5
+6 dB/OCT
+12 dB/OCT
+24 dB/OCT
+36 dB/OCT
+48 dB/OCT

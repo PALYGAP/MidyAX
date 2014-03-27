@@ -1,0 +1,12 @@
+11
+0  LOOPER_MIX   Mix
+1  LOOPER_LEVEL   Level
+2  LOOPER_PAN   Balance
+3  LOOPER_BYPASSMODE   Bypass Mode
+5  LOOPER_DUB_MIX   Dub Mix
+6  LOOPER_THRESH   Threshold
+7  LOOPER_THRESH_LEVEL   Threshold Level
+9  LOOPER_QUANTIZE   Quantize
+10  LOOPER_STOP   Trim Stop
+11  LOOPER_START   Trim Start
+12  LOOPER_PLAYIMMEDIATE   Play Immediately

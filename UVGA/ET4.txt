@@ -1,0 +1,21 @@
+20
+0  PEQ_FREQ1   Freq 1
+1  PEQ_FREQ2   Freq 2
+2  PEQ_FREQ3   Freq 3
+3  PEQ_FREQ4   Freq 4
+4  PEQ_FREQ5   Freq 5
+5  PEQ_Q1   Q1
+6  PEQ_Q2   Q2
+7  PEQ_Q3   Q3
+8  PEQ_Q4   Q4
+9  PEQ_Q5   Q5
+10  PEQ_GAIN1   Gain 1
+11  PEQ_GAIN2   Gain 2
+12  PEQ_GAIN3   Gain 3
+13  PEQ_GAIN4   Gain 4
+14  PEQ_GAIN5   Gain 5
+15  PEQ_LFTYPE   Frequency 1 Type
+16  PEQ_HFTYPE   Frequency 5 Type
+19  PEQ_LEVEL   Level
+20  PEQ_PAN   Balance
+21  PEQ_BYPASSMODE   Bypass Mode

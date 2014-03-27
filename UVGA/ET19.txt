@@ -1,0 +1,19 @@
+18
+1  FUZZ_DRIVE   Drive
+2  FUZZ_TONE   Tone
+3  FUZZ_LEVEL   Level
+4  FUZZ_MIX   Mix
+5  FUZZ_BYPASSMODE   Bypass Mode
+6  FUZZ_SLEW   Slew Limit
+8  FUZZ_LOCUT   Low Cut
+9  FUZZ_HICUT   High Cut
+10  FUZZ_CLIPTYPE   Clip Type
+11  FUZZ_BIAS   Bias
+12  FUZZ_BASS   Bass
+13  FUZZ_MID   Mid
+14  FUZZ_MIDFREQ   Mid Freq
+15  FUZZ_TREBLE   Treble
+16  FUZZ_BITREDUCE   Bit Reduce
+17  FUZZ_INPUTSELECT   Input Select
+18  FUZZ_PAN   Balance
+19  FUZZ_RESAMPLE   Sample Rate

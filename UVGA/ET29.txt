@@ -1,0 +1,12 @@
+11
+0  GATE_THRESH   Threhold
+1  GATE_ATTACK   Attack
+2  GATE_HOLD   Hold
+3  GATE_RELEASE   Release
+4  GATE_RATIO   Ratio
+5  GATE_KEY   Sidechain Select
+6  GATE_LOWCUT   Low Cut
+7  GATE_HICUT   High Cut
+9  GATE_LEVEL   Level
+10  GATE_PAN   Balance
+11  GATE_BYPASSMODE   Bypass Mode

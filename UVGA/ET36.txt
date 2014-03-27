@@ -1,0 +1,9 @@
+8
+0  OUTPUT_LEVEL1   Level 1
+1  OUTPUT_LEVEL2   Level 2
+2  OUTPUT_LEVEL3   Level 3
+3  OUTPUT_LEVEL4   Level 4
+4  OUTPUT_PAN1   Balance 1
+5  OUTPUT_PAN2   Balance 2
+6  OUTPUT_PAN3   Balance 3
+7  OUTPUT_PAN4   Balance 4

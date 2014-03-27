@@ -1,0 +1,11 @@
+10
+0  MIXER_GAIN1   Gain 1
+1  MIXER_GAIN2   Gain 2
+2  MIXER_GAIN3   Gain 3
+3  MIXER_GAIN4   Gain 4
+4  MIXER_PAN1   Balance 1
+5  MIXER_PAN2   Balance 2
+6  MIXER_PAN3   Balance 3
+7  MIXER_PAN4   Balance 4
+8  MIXER_MASTER   Master level
+9  MIXER_MODE   Output mode

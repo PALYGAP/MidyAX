@@ -1,0 +1,10 @@
+9
+0  FORMANT_FSTART   Start
+1  FORMANT_FMID   Mid
+2  FORMANT_FEND   End
+3  FORMANT_Q   Resonance
+4  FORMANT_CTRL   Control
+5  FORMANT_MIX   Mix
+6  FORMANT_LEVEL   Level
+7  FORMANT_PAN   Balance
+8  FORMANT_BYPASSMODE   Bypass Mode
