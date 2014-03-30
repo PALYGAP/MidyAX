@@ -1,13 +1,25 @@
-/////////////////////////////////
-//  @file		BCR2000.h
-//  Project		BCR2000 HEADER
-/////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
+// PROGRAM:     PROTOTYPE of MidyAX - BCR2000 to AXE-FX MIDI orchestrator
+// HARDWARE:    ARDUINO MEGA, 4 MIDI ports with a MIDI-IN and MIDI-OUT for each port.
+// CREATOR:     Eric FEUILLEAUBOIS
+// COPYRIGHTS:  LGNU
+////////////////////////////////////////////////////////////////////////////////////////////
+
+
 
 #ifndef BCR2000_H_
 #define BCR2000_H_
 
   #include <avr/pgmspace.h>
 
+  ///////////////
+  // FUNCTIONS //
+  ///////////////
+
+  void Change_BCR2000_Preset ( int Preset_Number, boolean init);
+  void BCR2000_Init_Current_Preset_Controls_Values ( void );
+  void BCR2000_ManageCC ( byte CC_channel, byte CC_number, byte CC_value );
+  void Manage4EffectStateButtons( void );
 
   ///////////////
   // CONSTANTS //

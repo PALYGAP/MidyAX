@@ -1,3 +1,11 @@
+////////////////////////////////////////////////////////////////////////////////////////////
+// PROGRAM:     PROTOTYPE of MidyAX - BCR2000 to AXE-FX MIDI orchestrator
+// HARDWARE:    ARDUINO MEGA, 4 MIDI ports with a MIDI-IN and MIDI-OUT for each port.
+// CREATOR:     Eric FEUILLEAUBOIS
+// COPYRIGHTS:  LGNU
+////////////////////////////////////////////////////////////////////////////////////////////
+
+
 ////////////////////////////////////////////////////////////////////////////
 //   HANDLE COMMUNICATIONS WITH uVGA TO DISPLAY THE SELECTED CONTROL PAGE //
 ////////////////////////////////////////////////////////////////////////////
@@ -236,6 +244,19 @@ void send_uvga_Z( int controlNumber, int MIDIValue, long DisplayValue )
   sSerial.print(DisplayValue, DEC);
   sSerial.println();
 }
+
+void send_uvga_Y( int controlNumber, int MIDIValue )
+{
+  // Only used in customization mode
+  // SENDS changing value of a the parameter ID
+  sSerial.print( F( "$" ) );
+  sSerial.print( F( "Y" ) );
+  sSerial.print(controlNumber, DEC);
+  sSerial.print( F( " " ) );
+  sSerial.print(MIDIValue, DEC);
+  sSerial.println();
+}
+
 
 void send_uvga_1( )
 {

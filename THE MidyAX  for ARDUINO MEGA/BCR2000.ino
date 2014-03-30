@@ -1,3 +1,11 @@
+////////////////////////////////////////////////////////////////////////////////////////////
+// PROGRAM:     PROTOTYPE of MidyAX - BCR2000 to AXE-FX MIDI orchestrator
+// HARDWARE:    ARDUINO MEGA, 4 MIDI ports with a MIDI-IN and MIDI-OUT for each port.
+// CREATOR:     Eric FEUILLEAUBOIS
+// COPYRIGHTS:  LGNU
+////////////////////////////////////////////////////////////////////////////////////////////
+
+
 void Change_BCR2000_Preset ( int Preset_Number, boolean init)
 {
   byte buf[71];
@@ -20,9 +28,9 @@ void Change_BCR2000_Preset ( int Preset_Number, boolean init)
   {  MIDI_BCR2000.sendControlChange( byte(59), byte(127), byte(1) ); }
   else { MIDI_BCR2000.sendControlChange( byte(59), byte(0), byte(1) ); }
 
-
-  if( LOOPER_STATE == true) { MIDI_BCR2000.sendControlChange( byte(63), byte(127), byte(1) ); }
-  else { MIDI_BCR2000.sendControlChange( byte(63), byte(0), byte(1) ); }
+  // TODO : Reactivate LOOPER page
+  //if( LOOPER_STATE == true) { MIDI_BCR2000.sendControlChange( byte(63), byte(127), byte(1) ); }
+  //else { MIDI_BCR2000.sendControlChange( byte(63), byte(0), byte(1) ); }
   
   if( LOOPER_STATE_RECORD == true) { MIDI_BCR2000.sendControlChange( byte(61), byte(127), byte(1) ); }
   else { MIDI_BCR2000.sendControlChange( byte(61), byte(0), byte(1) ); }
@@ -42,7 +50,7 @@ void Change_BCR2000_Preset ( int Preset_Number, boolean init)
 
 
 
-void BCR2000_Init_Current_Preset_Controls_Values ( )
+void BCR2000_Init_Current_Preset_Controls_Values ( void )
 {
     ///////////////////////////////////////
     //   INITIALISATION OF THE BCR2000   //
@@ -88,7 +96,15 @@ void BCR2000_ManageCC ( byte CC_channel, byte CC_number, byte CC_value )
     int BCR2000_Preset_Index = CC_number_dec - 40;
     boolean PB16_state_change = false;
 
-
+    //////////////////////////////////////////////////////////
+    // SPECIFIC TO MY BCR2000 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    if ( CC_number != 0x11) // ENCORER n°41 sending CC message 17 does not work
+    {
+       Last_Index_In_Mapping = CC_number_dec;
+    }
+    else {
+      Index_In_Mapping = Last_Index_In_Mapping;
+    }
 
 
 
@@ -104,36 +120,100 @@ void BCR2000_ManageCC ( byte CC_channel, byte CC_number, byte CC_value )
     if( CUSTOMIZE_STATE == true )
     {
     	if (  !(CC_number_dec >= 1  && CC_number_dec <= 40) and CC_number_dec != BCR2000_CUSTOMIZE_CC_DEFINE ) 
-        {return;}
+        {
+          // ONCE in customization state only the controller or the customize button can be pressed
+          return;
+        }
+        if (  CC_number_dec >= 1  && CC_number_dec <= 32 )
+        {
+	  // Process customization of the 32 encoders for the Effect Control Page
+          
+          byte CS_Effect_Type_used = CS_Effect_Type-2;
+          struct DYN_Parameter THE_Parameter;
+
+          //int addr = CS_Preset_Number * (BCR2000_ENCODER_NUMBER + BCR2000_PUSH_BUT_NUMBER) + Last_Index_In_Mapping;
+          //byte Current_Param_ID = EEPROM.read(addr);
+          
+          // Build the list of parameter with label (in AXE-EDIT) and store their Param_ID and count how many param for that Effect Type
+          byte nbActifParam = 0;
+          byte ID[200];
+          for(int i = 0 ; i <  CurrentControlPage_EffectType.numOfParameters ; i++)
+          {
+            Read_Parameter_FromFLASH( (byte) CS_Effect_Type_used, i , &THE_Parameter ); 
+            if( strcmp( THE_Parameter.label, "") != 0)
+            {
+              ID[i] = THE_Parameter.ID;
+              nbActifParam ++;
+            }
+ 	  }
+          
+          // --> Done in uVGA program
+          // Process according to type of control (Encoder or encoder button)
+          // for parameter.displaytpe = 1 or 6 ==> buttons
+          
+          //int TEMPO = ( CC_number_dec /127 ) * (nbActifParam - 1);
+          CC_number_dec = ID[ TEMPO ];
+
+          // BCR2000 sends back a CC_number_dec value from 0 to nbActifParam - 1
+          // Change the mapping
+          int addr = CS_Preset_Number * (BCR2000_ENCODER_NUMBER + BCR2000_PUSH_BUT_NUMBER) + Last_Index_In_Mapping;
+          EEPROM.write(addr, byte( ID[CC_value_dec] ) );
+          //Send message to the uVGA
+          send_uvga_Y( Last_Index_In_Mapping, CC_value_dec );
+        }
         
-	// Process customization of the 32 encoders/8 encoder buttons for the Effect Control Page
-        
+
+        if (  CC_number_dec >= 33  && CC_number_dec <= 40 )
+        {
+          // Process the customization of the 8 top encoder Buttons
+          // Build the list of parameter with label (in AXE-EDIT) and store their Param_ID and count how many param for that Effect Type
+          byte nbActifParam = 0;
+          byte ID[200];
+          for(int i = 0 ; i <  CurrentControlPage_EffectType.numOfParameters ; i++)
+          {
+            Read_Parameter_FromFLASH( (byte) CS_Effect_Type_used, i , &THE_Parameter ); 
+            if( strcmp( THE_Parameter.label, "") != 0 && THE_Parameter.displayType != 1 && THE_Parameter.displayType != 6)
+            {
+              ID[i] = THE_Parameter.ID;
+              nbActifParam ++;
+            }
+ 	  }
+          
+        }
+
     }
 
 
     // CUSTOMIZE button has been preset
     if (  CC_number_dec == BCR2000_CUSTOMIZE_CC_DEFINE )
     {
+      static int CurrentBCR2000Preset;
       if( CUSTOMIZE_STATE == false )
       { 
-      	// Make sure that the current page is an Effect Control Page or Quick Access pages
-	
-	if test OK
-	CUSTOMIZE_STATE = true; 
-	Light up the Button
-	
-	
-	if not 
-	CUSTOMIZE_STATE = false;
-      	Light down the Button
-      	endif	
+ 	// Make sure that the current page is an Effect Control Page or Quick Access pages
+        // and the BCR2000 is not RECORD or PLAY state
+        if ( LOOPER_STATE_RECORD == false && LOOPER_STATE_PLAY == false)
+        { 
+          CUSTOMIZE_STATE = true;
+          MIDI_BCR2000.sendControlChange( byte(BCR2000_CUSTOMIZE_CC_DEFINE), byte(127), byte(1) );
+          
+          CurrentBCR2000Preset = CS_Preset_Number;
+          // CALLL current BCR2000 preset reconfigure
+          BCR2000_Customize_Conf( CurrentBCR2000Preset);
+        }
+        else {
+          CUSTOMIZE_STATE = false;
+          MIDI_BCR2000.sendControlChange( byte(BCR2000_CUSTOMIZE_CC_DEFINE), byte(0), byte(1) );
+        }
       }
       else 
       { 
       	CUSTOMIZE_STATE = false;  
-      	Light down the Button
+      	MIDI_BCR2000.sendControlChange( byte(BCR2000_CUSTOMIZE_CC_DEFINE), byte(0), byte(1) );
+        // Only when CUSTOMIZE_STATE goes from TRUE to FALSE
+        BCR2000_Init_Device( CurrentBCR2000Preset, CurrentBCR2000Preset);
+        
       }
-      
       return;
     }
 
@@ -143,15 +223,8 @@ void BCR2000_ManageCC ( byte CC_channel, byte CC_number, byte CC_value )
     if (  CC_number_dec >= 1  && CC_number_dec <= 40 )
     {
       CC_number_dec = CC_number_dec - 1; //Received CC range from 1 to 40 where Index range from 0 to 39
-     
       Index_In_Mapping = CC_number_dec ;
-      if ( CC_number != 0x11) // ENCORER n°41 sending CC message 17 does not work
-      {
-         Last_Index_In_Mapping = CC_number_dec;
-      }
-      else {
-        Index_In_Mapping = Last_Index_In_Mapping;
-      }
+ 
 
 #ifdef DEBUG
             Serial.print("Index_In_Mapping = "); Serial.print( Index_In_Mapping, DEC);
@@ -366,7 +439,8 @@ void BCR2000_ManageCC ( byte CC_channel, byte CC_number, byte CC_value )
 //*/
       // FLASH OFF LED to mark end of processing
       digitalWrite(parValueLedPin, LOW);
-      
+    
+    return;  
     }  //ENFofIF in range
 
 
@@ -419,13 +493,12 @@ void BCR2000_ManageCC ( byte CC_channel, byte CC_number, byte CC_value )
 #endif 
         send_uvga_1();
       }
-
-      
       return;
     }
 
+    // NOT ACTIVE for now : TODO put it in special functions
+    /*
 
-    
     // LOOPER MODE EXIT
     if( CC_number_dec == 63 && LOOPER_STATE == true)
     {
@@ -474,15 +547,15 @@ void BCR2000_ManageCC ( byte CC_channel, byte CC_number, byte CC_value )
   Serial.println();Serial.println();  //line feed
 #endif 
 
-/*      if (LOOPER_STATE == false && ( (CC_number_dec >= 49 && CC_number_dec <= 56) || CC_number_dec >= 41  ) )
-      {
-          if (LOOPER_STATE_RECORD == false) { MIDI_BCR2000.sendControlChange( byte(61), byte(0), byte(1) ); } 
-          else { MIDI_BCR2000.sendControlChange( byte(61), byte(127), byte(1) ); }
-          if (LOOPER_STATE_PLAY == false) { MIDI_BCR2000.sendControlChange( byte(62), byte(0), byte(1) ); } 
-          else { MIDI_BCR2000.sendControlChange( byte(62), byte(127), byte(1) ); }
-      }
-      else {
-*/  
+   //if (LOOPER_STATE == false && ( (CC_number_dec >= 49 && CC_number_dec <= 56) || CC_number_dec >= 41  ) )
+   //   {
+   //       if (LOOPER_STATE_RECORD == false) { MIDI_BCR2000.sendControlChange( byte(61), byte(0), byte(1) ); } 
+   //       else { MIDI_BCR2000.sendControlChange( byte(61), byte(127), byte(1) ); }
+   //       if (LOOPER_STATE_PLAY == false) { MIDI_BCR2000.sendControlChange( byte(62), byte(0), byte(1) ); } 
+   //       else { MIDI_BCR2000.sendControlChange( byte(62), byte(127), byte(1) ); }
+   //   }
+   //   else {
+  
         // Check if the button/encoder received is active
         if( CC_number_dec >= 41 || CC_number_dec == 61 || CC_number_dec == 62 ||
             ( CC_number_dec >= 49 && CC_number_dec <= 56 ) )
@@ -582,30 +655,30 @@ void BCR2000_ManageCC ( byte CC_channel, byte CC_number, byte CC_value )
             else {MIDI_AXE.sendControlChange( byte(122) , byte(0), byte(12) ); LOOPER_STATE_UNDO = false;}          
           } 
           
-          /* NO CC for these for now  --> TODO use SYSEX 
-          //QUANTIZE pressed
-          if ( CC_number_dec == 112) 
-          {
-            // CC 121 is the default mapping CC for LOOPER UNDO
-            if (LOOPER_STATE_UNDO == false) 
-            { MIDI_AXE.sendControlChange( byte(121) , byte(127), byte(1) ); LOOPER_STATE_UNDO = true}
-            else {MIDI_AXE.sendControlChange( byte(127) , byte(0), byte(1) ); LOOPER_STATE_UNDO = false}          
-          } 
-          //THRESH pressed
-          if ( CC_number_dec == 113) 
-          {
-            // CC 121 is the default mapping CC for LOOPER UNDO
-            if (LOOPER_STATE_UNDO == false) 
-            { MIDI_AXE.sendControlChange( byte(121) , byte(127), byte(1) ); LOOPER_STATE_UNDO = true}
-            else {MIDI_AXE.sendControlChange( byte(127) , byte(0), byte(1) ); LOOPER_STATE_UNDO = false}          
-          } */   
+//          NO CC for these for now  --> TODO use SYSEX 
+//          //QUANTIZE pressed
+//          if ( CC_number_dec == 112) 
+//          {
+//            // CC 121 is the default mapping CC for LOOPER UNDO
+//            if (LOOPER_STATE_UNDO == false) 
+//            { MIDI_AXE.sendControlChange( byte(121) , byte(127), byte(1) ); LOOPER_STATE_UNDO = true}
+//            else {MIDI_AXE.sendControlChange( byte(127) , byte(0), byte(1) ); LOOPER_STATE_UNDO = false}          
+//          } 
+//          //THRESH pressed
+//          if ( CC_number_dec == 113) 
+//          {
+//            // CC 121 is the default mapping CC for LOOPER UNDO
+//            if (LOOPER_STATE_UNDO == false) 
+//            { MIDI_AXE.sendControlChange( byte(121) , byte(127), byte(1) ); LOOPER_STATE_UNDO = true}
+//            else {MIDI_AXE.sendControlChange( byte(127) , byte(0), byte(1) ); LOOPER_STATE_UNDO = false}          
+//          }    
           
           // MANAGE ON-BYPASS STATE
         }
       //}
       return;  
     }
-
+    */
 
 
     /////////////////////////////////// Push button SHIFT is managed on its own and its state memorised ////////////////////////////////
@@ -1163,5 +1236,6 @@ void Manage4EffectStateButtons( void )
       Serial.println("");
 #endif  
 }
+
 
 

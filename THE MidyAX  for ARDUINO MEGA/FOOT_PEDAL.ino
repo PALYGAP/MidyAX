@@ -1,3 +1,11 @@
+////////////////////////////////////////////////////////////////////////////////////////////
+// PROGRAM:     PROTOTYPE of MidyAX - BCR2000 to AXE-FX MIDI orchestrator
+// HARDWARE:    ARDUINO MEGA, 4 MIDI ports with a MIDI-IN and MIDI-OUT for each port.
+// CREATOR:     Eric FEUILLEAUBOIS
+// COPYRIGHTS:  LGNU
+////////////////////////////////////////////////////////////////////////////////////////////
+
+
 void FOOTPEDAL_ManageCC ( byte CC_channel, byte CC_number, byte CC_value )
 {
 
