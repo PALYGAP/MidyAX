@@ -36,7 +36,7 @@ var DP; // pointer to disk struct
 
 /////////////////
 // Display Global Variables
-var X, Y, MAX_X, MAX_Y;
+var XX, YY, MAX_X, MAX_Y;
 var lineColor;
 var i, j, k, index;
 
@@ -64,14 +64,17 @@ var controlPage_Unit[BCR2000_ENCODER_NUMBER + BCR2000_PUSH_BUT_NUMBER];
 
 // MODAL LISTs
 #define LBS 20
-var lastLoaded := -1, lastNum := -1;
+var lastLoadedModalList := -1, lastLoadedEffectParametersList := -1, lastNumbModal := -1, lastNumbParam := -1;
 var tempoSTR[30];
 var tempoSTR2 [50];
 var FP2;
-var labelBuffer[200]; //Contains all the labels of a modal parameter
+
+var modalLabelBuffer[181]; //Contains all the labels of a modal parameter
+var paramLabelBuffer[111]; //Contains all the allowed Parameter Label of an Effect Type
+var paramIDBuffer[111]; //Contains all the IDs of allowed parameters
 
 var fileName[20];
-var filePtr, res, FP1, p, p2, numberOf_ModVal, length, freeMem;
+var filePtr, res, FP1, p, p2, numberOf_ModVal, numberOf_Param, length, freeMem;
 var startTime, elapsed;
 
 // AXE-FX PRESET
@@ -365,7 +368,9 @@ endfunc
 //*************************************************************************************************************************
 //func Process_Msg( var *msgBuf, var bufLength )
 func Process_Msg( var *msgBuf )
-    var private A:=-1, B:=-1, C:=-1, D:=-1 , E:=-1, F:=-1, G:=-1, H:=-1, I:=-1, J:=-1, K:=-1, L:=-1, M:=-1, N:=-1, O:=-1, P:=-1, Z:=-1;
+    //var private A, B, C, D, Y, Z;
+    //A:=-1; B:=-1; C:=-1; D:=-1; Y:=-1; Z:=-1;
+    var private A:=-1, B:=-1, C:=-1, D:=-1 , Y:=-1, Z:=-1;
     var private ScreenShot_nb := 0;
     var msgPtr;
     var msgID;
@@ -378,7 +383,7 @@ func Process_Msg( var *msgBuf )
     #endif
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////
-    //Processing receivecd message
+    //Processing received message
     ////////////////////////////////////////////////////////////////////////////////////////////////////////
     msgPtr := str_Ptr(msgBuf);
 
@@ -474,9 +479,9 @@ func Process_Msg( var *msgBuf )
 
             // FREE the memory of the last loaded Modal List (of the previously selected Control Page)
             var k;
-            if( lastNum > 0)
-                for( k := 0; k < lastNum; k++)
-                    res := mem_Free( labelBuffer[k] );
+            if( lastNumbModal > 0)
+                for( k := 0; k < lastNumbModal; k++)
+                    res := mem_Free( modalLabelBuffer[k] );
                     if ( res == 0  )
                         gfx_MoveTo(0,60);
                         to(TEXT); print( "MEMORY DE-ALLOC ERROR at n°", k, "\n" );
@@ -486,7 +491,21 @@ func Process_Msg( var *msgBuf )
                     endif
                 next
             endif
-            lastLoaded := -1; lastNum := -1;
+            // Memory de-allocation of last loaded list of parameter labels
+            if( lastNumbParam> 0)
+                for( k := 0; k < lastNumbParam; k++)
+                    res := mem_Free( modalLabelBuffer[k] );
+                    if ( res == 0  )
+                        gfx_MoveTo(0,60);
+                        to(TEXT); print( "MEMORY DE-ALLOC ERROR at n°", k, "\n" );
+                    else
+                        //print("DE-ALLOCATED = ", res, "\n" );
+                        //pause(100);
+                    endif
+                next
+            endif
+
+            lastLoadedModalList := -1; lastLoadedEffectParametersList := -1; lastNumbModal := -1, lastNumbParam := -1;
 
             str_GetW( &msgPtr, &( CurrentControlPage_EffectBlockID ) );
             str_GetW( &msgPtr, &( CurrentControlPage_EffectTypeID ) );
@@ -517,14 +536,18 @@ func Process_Msg( var *msgBuf )
             #endif
             //pause(20000);
 
-
+            // INITIALIZATION OF THE PARAMETER LABELS DISPLAY ON THE CURRENT CONTROL PAGE
             for (i := 0; i < BCR2000_ENCODER_NUMBER + BCR2000_PUSH_BUT_NUMBER; i++)
                 //print(i," = ,", controlPage_Labels[i], ";");
                 *controlPage_Labels[i] := '\0';
                 //print(i," = ,", controlPage_Labels[i], ";");
             next
         break;
+
         case 67 :  // CCCCCCCCCC
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // RECEPTION OF THE PARAMETER INFO FOR ONE CONTROL ELEMENT : Param Number, Param Label, Param Unit, Modal List of the param
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             var controlNumber, effectType, paramNumber;
             var label[LABEL_MAX_LENGTH];
             var label1[LABEL_MAX_LENGTH];
@@ -535,10 +558,12 @@ func Process_Msg( var *msgBuf )
             str_GetW( &msgPtr, &effectType );
             str_GetW( &msgPtr, &paramNumber );
             str_GetW( &msgPtr, &(controlPage_Unit[controlNumber]) );
-            //if( controlPage_Unit[controlNumber] < 0 || controlPage_Unit[controlNumber] > 9 )
-            //    controlPage_Unit[controlNumber] := 0;
-            //endif
+                // CHECK UNITS EXIST
+                if( controlPage_Unit[controlNumber] < 0 || controlPage_Unit[controlNumber] > 7 )
+                    controlPage_Unit[controlNumber] := 0;
+                endif
             str_GetW( &msgPtr, &(controlPage_ID_ModValList[controlNumber]) );
+
 #ifdef DEBUG2
             gfx_Cls();
             gfx_MoveTo(0,0);
@@ -549,13 +574,12 @@ func Process_Msg( var *msgBuf )
             print("controlPage_Unit[controlNumber] = ", controlPage_Unit[controlNumber],"\n");
             //pause(2000);
 #endif
+
             labelPtr := str_Ptr(label);
             msgPtr++;
             length := str_Length(msgPtr);
             copy_nstr(length, &msgPtr, labelPtr);
             labelPtr := str_Ptr(label);
-
-
 
             if ( controlNumber <= BCR2000_ENCODER_NUMBER + BCR2000_PUSH_BUT_NUMBER)
                 labelPtr := str_Ptr(label);
@@ -563,33 +587,25 @@ func Process_Msg( var *msgBuf )
                 msgPtr :=  str_Ptr(controlPage_Labels[controlNumber]);
                 copy_nstr(length, &labelPtr, msgPtr);
                 msgPtr :=  str_Ptr(controlPage_Labels[controlNumber]);
-
-#ifdef DEBUG2
-            print("String length msgPtr= ", length,"\n");
-            //print("labelPtr = ");
-            print("controlPage_Labels[controlNumber] = ", [STR] controlPage_Labels[controlNumber], "\n");
-            pause(2000);
-#endif
-
+                    #ifdef DEBUG2
+                        print("String length msgPtr= ", length,"\n");
+                        //print("labelPtr = ");
+                        print("controlPage_Labels[controlNumber] = ", [STR] controlPage_Labels[controlNumber], "\n");
+                        pause(2000);
+                    #endif
             endif
 
-            //gfx_Cls();
-            /*for (j := 0; j < controlNumber; j++)
-                    msgPtr :=  str_Ptr(controlPage_Labels[j]);
-                    print("i=",j,", msgPtr=",msgPtr,", ");str_Printf ( &msgPtr , "label = %s\n" );
-                    //controlPage_Labels[i] := '\0';
-                    //print(i," = ,", controlPage_Labels[i], ";");
-            next
-            pause(2000);*/
-
             if (controlNumber == BCR2000_ENCODER_NUMBER + BCR2000_PUSH_BUT_NUMBER + 1)
-                 //print("message C 41 received, Effect type = ", effectType, "\n");
-                 //pause(2000);
                  C := effectType;
+                    #ifdef DEBUG2
+                        print("message C 41 received, Effect type = ", effectType, "\n");
+                        pause(2000);
+                    #endif
             else
                 return;
             endif
         break;
+
         case 68 :  // DDDDDDDDD
             str_GetW(&msgPtr,&controlNumber);
             //#ifdef DEBUG2
@@ -608,6 +624,15 @@ func Process_Msg( var *msgBuf )
             else
                 return;
             endif
+        break;
+        case 89 :  // YYYYYYYYY
+            str_GetW(&msgPtr,&controlNumber);
+            str_GetW(&msgPtr,&controlPage_MIDIValues[controlNumber]);
+            //print("ControlNumber = ", controlNumber, "\n");
+            //print("controlPage_MIDIValues[controlNumber] = ", controlPage_MIDIValues[controlNumber], "\n");
+            //to(TEXT); print("controlNumber = ", controlNumber, "  controlPage_RawValues[controlNumber] = ", controlPage_RawValues[controlNumber], "\n");
+            //return;
+            Y := controlNumber;
         break;
         case 90 :  // ZZZZZZZZZ
             str_GetW(&msgPtr,&controlNumber);
@@ -653,7 +678,13 @@ func Process_Msg( var *msgBuf )
                 display_ParamValue( Z );
                 Z := -1;
             endif
-        break;
+            if( B == -1 && C == -1 && D == -1 && Y != -1)
+                //gfx_MoveTo(0,0); print("Calling Z display \n");pause(2000);
+                //print("B = ", B, " C = ", C, " D = ", D, " Z = ", Z,"\n");
+                //screen_Display_ControlPage( Z );
+                display_ParamLabel( Y );
+                Y := -1;
+            endif        break;
         case 99 :
             // OPERATIONAL PARAMETERS SCREEN
             gfx_MoveTo(10,10);
@@ -731,9 +762,9 @@ func screen_Display_ControlPage( )
     start_Y := (MAX_Y+1) /24;
     //start_Y := MAX_Y/12;
     for(i := 0; i < 9; i++)
-        X := ( MAX_X * i ) / 8;
+        XX := ( MAX_X * i ) / 8;
         //gfx_Line( X-1, start_Y, X-1,  MAX_Y, lineColor);
-        gfx_Line( X, start_Y, X,  MAX_Y, lineColor);
+        gfx_Line( XX, start_Y, XX,  MAX_Y, lineColor);
         //gfx_Line( X+1, start_Y, X+1,  MAX_Y, lineColor);
     next
 
@@ -747,13 +778,13 @@ func screen_Display_ControlPage( )
     txt_Bold(OFF);
 
 
-    X := ( MAX_X +1) / 8;
+    XX := ( MAX_X +1) / 8;
     //to(TEXT); print("MAX_X = ", MAX_X," MAX_X/8 = ", MAX_X/8, "\n");
     //to(TEXT); print("MAX_Y = ", MAX_Y," MAX_Y/12 = ", MAX_Y/12, "\n");  pause(10000);
     index :=0;
     for(i := 1; i <= 2; i++)
-        Y := ( (MAX_Y+1) / 12) * (i-1) + ((MAX_Y+1) / 24);
-        gfx_Line( 0, Y, MAX_X,  Y, lineColor);
+        YY := ( (MAX_Y+1) / 12) * (i-1) + ((MAX_Y+1) / 24);
+        gfx_Line( 0, YY, MAX_X,  YY, lineColor);
         for(j := 1; j <= 8; j++)
             txt_Width(1);
             txt_Height(2);
@@ -764,7 +795,7 @@ func screen_Display_ControlPage( )
                 txt_BGcolour(RED);
                 if( CurrentControlPage_OBState == 1)
                     txt_BGcolour(RED);
-                    gfx_TriangleFilled(  X*(j-1)   ,   ((MAX_Y+1)/12) * i -2 + ((MAX_Y+1) / 24)  ,   (X*j) -1   ,   ((MAX_Y+1)/12) * (i-1) + ((MAX_Y+1) / 24)  , X*(j-1) , ((MAX_Y+1)/12) * (i-1) + ((MAX_Y+1) / 24), RED);
+                    gfx_TriangleFilled(  XX*(j-1)   ,   ((MAX_Y+1)/12) * i -2 + ((MAX_Y+1) / 24)  ,   (XX*j) -1   ,   ((MAX_Y+1)/12) * (i-1) + ((MAX_Y+1) / 24)  , XX*(j-1) , ((MAX_Y+1)/12) * (i-1) + ((MAX_Y+1) / 24), RED);
                 endif
             else
                 txt_FGcolour(GRAY);
@@ -777,13 +808,13 @@ func screen_Display_ControlPage( )
                         if( OBState[k] == 1)
                             txt_FGcolour(BLACK);
                             txt_BGcolour(WHITE);
-                            gfx_TriangleFilled(  X*(j-1)   ,   ((MAX_Y+1)/12) * i -2 + ((MAX_Y+1) / 24)  ,   (X*j)-1   ,   ((MAX_Y+1)/12) * (i-1) + ((MAX_Y+1) / 24)  , X*(j-1)  , ((MAX_Y+1)/12) * (i-1) + ((MAX_Y+1) / 24), WHITE);
+                            gfx_TriangleFilled(  XX*(j-1)   ,   ((MAX_Y+1)/12) * i -2 + ((MAX_Y+1) / 24)  ,   (XX*j)-1   ,   ((MAX_Y+1)/12) * (i-1) + ((MAX_Y+1) / 24)  , XX*(j-1)  , ((MAX_Y+1)/12) * (i-1) + ((MAX_Y+1) / 24), WHITE);
                         endif
                         break;
                     endif
                 next
             endif
-            gfx_MoveTo( X * (j-1) + 2, Y + MAX_Y/64 );
+            gfx_MoveTo( XX * (j-1) + 2, YY + MAX_Y/64 );
             putstr( ETLab[index] );
 
 
@@ -793,7 +824,7 @@ func screen_Display_ControlPage( )
                 txt_BGcolour(RED);
                 if( CurrentControlPage_OBState == 1)
                     txt_BGcolour(RED);
-                    gfx_TriangleFilled(  X*(j-1)   ,   ((MAX_Y+1)/12) * i -2 + ((MAX_Y+1) / 24) ,   (X*j)-2  ,   ((MAX_Y+1)/12) * (i-1) + ((MAX_Y+1) / 24)  , (X*j)-2 , ((MAX_Y+1)/12)* i -2 + ((MAX_Y+1) / 24), RED);
+                    gfx_TriangleFilled(  XX*(j-1)   ,   ((MAX_Y+1)/12) * i -2 + ((MAX_Y+1) / 24) ,   (XX*j)-2  ,   ((MAX_Y+1)/12) * (i-1) + ((MAX_Y+1) / 24)  , (XX*j)-2 , ((MAX_Y+1)/12)* i -2 + ((MAX_Y+1) / 24), RED);
                 endif
             else
                 txt_BGcolour(BLACK);
@@ -806,16 +837,16 @@ func screen_Display_ControlPage( )
                         if( OBState[k] == 1)
                             txt_FGcolour(BLACK);
                             txt_BGcolour(WHITE);
-                            gfx_TriangleFilled(  X*(j-1)   ,   ((MAX_Y+1)/12) * i -2 + ((MAX_Y+1) / 24) ,   (X*j)-2   ,   ((MAX_Y+1)/12) * (i-1) + ((MAX_Y+1) / 24)  , (X*j)-2 , ((MAX_Y+1)/12)*i -2 + ((MAX_Y+1) / 24), WHITE);
+                            gfx_TriangleFilled(  XX*(j-1)   ,   ((MAX_Y+1)/12) * i -2 + ((MAX_Y+1) / 24) ,   (XX*j)-2   ,   ((MAX_Y+1)/12) * (i-1) + ((MAX_Y+1) / 24)  , (XX*j)-2 , ((MAX_Y+1)/12)*i -2 + ((MAX_Y+1) / 24), WHITE);
                         endif
                         break;
                     endif
                 next
             endif
-            gfx_MoveTo( X * (j-1) + MAX_X/12, Y + MAX_Y/24 + 2 );
+            gfx_MoveTo( XX * (j-1) + MAX_X/12, YY + MAX_Y/24 + 2 );
             putstr( ETLab[index+16] );
 
-            gfx_Line(   X*(j-1)   ,   ((MAX_Y+1)/12) * i -2 + ((MAX_Y+1) / 24) ,   X*j   ,   ((MAX_Y+1)/12) * (i-1) + ((MAX_Y+1) / 24)  , lineColor );
+            gfx_Line(   XX*(j-1)   ,   ((MAX_Y+1)/12) * i -2 + ((MAX_Y+1) / 24) ,   XX*j   ,   ((MAX_Y+1)/12) * (i-1) + ((MAX_Y+1) / 24)  , lineColor );
             index++;
         next
     next
@@ -837,8 +868,8 @@ func screen_Display_ControlPage( )
     start_Y := (MAX_Y+1) /6 + ((MAX_Y+1) / 24);
     index :=0;
     for(i := 1; i < 6; i++)
-        Y := ( (MAX_Y+1) / 6) * i + ((MAX_Y+1) / 24);
-            gfx_Line( 0, Y, MAX_X,  Y, lineColor);
+        YY := ( (MAX_Y+1) / 6) * i + ((MAX_Y+1) / 24);
+            gfx_Line( 0, YY, MAX_X,  YY, lineColor);
         for(j := 1; j <= 8; j++)
             //labPtr :=  str_Ptr(controlPage_Labels[index]);
             //str_Printf( &labPtr , "%s\n" );
@@ -858,7 +889,7 @@ func screen_Display_ControlPage( )
                 //print( "labLength = ", labLength, "\n" );
                 //print( "controlNumber = ", controlNumber, "\n" );
 
-                gfx_MoveTo( X * (j-1) + 3, Y + 2 ); // + MAX_Y/128
+                gfx_MoveTo( XX * (j-1) + 3, YY + 2 ); // + MAX_Y/128
                 txt_Width(1);
                 txt_Height(1);
                 txt_FGcolour(WHITE);
@@ -871,7 +902,7 @@ func screen_Display_ControlPage( )
                 txt_BGcolour(BLACK);
                 txt_FontID (FONT1);
 
-                gfx_MoveTo( X * (j-1) + MAX_X/64, Y + MAX_Y/24 );
+                gfx_MoveTo( XX * (j-1) + MAX_X/64, YY + MAX_Y/24 );
                 txt_Width(1);
                 txt_Height(1);
                 for(k := 0; k < labLength; k++)
@@ -912,11 +943,11 @@ func screen_Display_ControlPage( )
                 if( str1Length + str2Length <= 9)
                     if( str1Length > 0 ) str_Printf( &labStr1Ptr  , "%s" );
                     if( str2Length > 0 ) str_Printf( &labStr2Ptr  , " %s" );
-                    gfx_MoveTo( X * (j-1) + MAX_X/64, Y + MAX_Y/24 + 12 );
+                    gfx_MoveTo( XX * (j-1) + MAX_X/64, YY + MAX_Y/24 + 12 );
                     if( str3Length > 0 ) str_Printf( &labStr3Ptr  , "%s" );
                 else
                     if( str1Length > 0 ) str_Printf( &labStr1Ptr  , "%s" );
-                    gfx_MoveTo( X * (j-1) + MAX_X/64, Y + MAX_Y/24 + 12 );
+                    gfx_MoveTo( XX * (j-1) + MAX_X/64, YY + MAX_Y/24 + 12 );
                     if( str2Length > 0 ) str_Printf( &labStr2Ptr  , "%s" );
                     if( str3Length > 0 ) str_Printf( &labStr3Ptr  , " %s" );
                 endif
@@ -935,7 +966,7 @@ func screen_Display_ControlPage( )
 */
                 txt_Width(1);
                 txt_Height(1);
-                gfx_MoveTo( X * (j-1) + MAX_X/11, Y + MAX_Y/9 + 18 );
+                gfx_MoveTo( XX * (j-1) + MAX_X/11, YY + MAX_Y/9 + 18 );
                 //print( controlPage_MIDIValues[index] );
                 //print( controlPage_Unit[index] , "\n");
                 if( controlPage_Unit[index] != 0) // && index !=1)
@@ -983,8 +1014,8 @@ func display_ParamValue( var controlNumber )
     j := controlNumber - ( i * 8 );
     i := i + 1;
     j := j + 1;
-    X := (MAX_X +1) / 8;
-    Y :=  ( (MAX_Y+1) / 6) * i + ((MAX_Y+1) / 24);
+    XX := (MAX_X +1) / 8;
+    YY :=  ( (MAX_Y+1) / 6) * i + ((MAX_Y+1) / 24);
 
     labPtr :=  str_Ptr(controlPage_Labels[index]);
     labLength := str_Length(labPtr);
@@ -995,24 +1026,23 @@ func display_ParamValue( var controlNumber )
     if( controlPage_ID_ModValList[index] == -1 || controlPage_ID_ModValList[index] == -256) //TODO : Check why -256 ?????????
         //print("Real Value");
 
-        gfx_RectangleFilled( X * (j-1) + MAX_X/32 ,
-                            Y + MAX_Y/10,
-                            X * (j-1) + MAX_X/32 + 34,
-                            Y + MAX_Y/10 + 14,
+        gfx_RectangleFilled( XX * (j-1) + MAX_X/32 ,
+                            YY + MAX_Y/10,
+                            XX * (j-1) + MAX_X/32 + 34,
+                            YY + MAX_Y/10 + 14,
                             BLACK);
-        gfx_MoveTo( X * (j-1) + MAX_X/32, Y + MAX_Y/10  );
+        gfx_MoveTo( XX * (j-1) + MAX_X/32, YY + MAX_Y/10  );
 
         txt_FGcolour(LIGHTBLUE);
         txt_Width(1);
         txt_Height(2);
         print( controlPage_RawValues[index] );
     else
-        if( lastLoaded != controlPage_ID_ModValList[index] )
+        if( lastLoadedModalList != controlPage_ID_ModValList[index] )
 
-            if( lastNum > 0)
-                //for(k := 0; k < lastNum; k++)
-                for(k := lastNum -1; k >= 0 ; k--)
-                    res := mem_Free( labelBuffer[k] );
+            if( lastNumbModal > 0)
+                for(k := lastNumbModal -1; k >= 0 ; k--)
+                    res := mem_Free( modalLabelBuffer[k] );
                     if ( res == 0  )
                         gfx_MoveTo(0,60);
                         to(TEXT); print( "MEMORY DE-ALLOC ERROR at n°", k, "\n" );
@@ -1028,11 +1058,11 @@ func display_ParamValue( var controlNumber )
             gfx_MoveTo(0,10);
             print("LOADING  = ", sys_T(), "\n");
             gfx_MoveTo(0,20);
-            print( "lastLoaded = ", lastLoaded, "\n" );
+            print( "lastLoadedModalList = ", lastLoadedModalList, "\n" );
             gfx_MoveTo(0,30);
             print( "controlPage_ID_ModValList[index] = ", controlPage_ID_ModValList[index], "\n" );
             gfx_MoveTo(0,40);
-            print( "lastNum = ", lastNum, "\n" );
+            print( "lastNumbModal = ", lastNumbModal, "\n" );
             pause(10000);
 #endif
             filePtr := str_Ptr(fileName);
@@ -1077,15 +1107,15 @@ func display_ParamValue( var controlNumber )
 //to(TEXT); print("Line ",k, " read = ", [STR] tempoSTR2, "\n");
                 length := str_Length( p );
 //to(TEXT); print("Length of line ", k, " = ", length, "\n");
-                labelBuffer[k] := mem_Alloc( length +1 );
-                if( labelBuffer[k] == 0 )
+                modalLabelBuffer[k] := mem_Alloc( length +1 );
+                if( modalLabelBuffer[k] == 0 )
                      to(TEXT); print(" Memory ALLOC error for label n° ", k );  pause(500);
                 endif
                 p := str_Ptr( tempoSTR2 );
-                p2 := str_Ptr( labelBuffer[k] );
+                p2 := str_Ptr( modalLabelBuffer[k] );
                 str_Copy(p2, "");
                 str_Copy(p2, p);
-                //to(TEXT); print("Value stored in label[", k, "] = ", [STR] labelBuffer[k], "\n");
+                //to(TEXT); print("Value stored in label[", k, "] = ", [STR] modalLabelBuffer[k], "\n");
                 //pause(1000);
                 if( file_Error() == FE_EOF )
                     to(TEXT); print("File", [STR]fileName,"  not closed\n", "File ERROR = ", file_Error() );  pause(500);
@@ -1102,30 +1132,30 @@ func display_ParamValue( var controlNumber )
             if( res == 0)
                 to(TEXT); print("File", [STR]fileName,"  not closed\n", "File ERROR = ", file_Error() );  pause(500);
             endif
-            lastLoaded := controlPage_ID_ModValList[index];
-            lastNum := numberOf_ModVal;
+            lastLoadedModalList := controlPage_ID_ModValList[index];
+            lastNumbModal := numberOf_ModVal;
 #ifdef DEBUG2
             to(TEXT);
             gfx_MoveTo(0,50);
-            print( "lastLoaded = ", lastLoaded, "\n" );
+            print( "lastLoadedModalList = ", lastLoadedModalList, "\n" );
             gfx_MoveTo(0,60);
-            print( "lastNum = ", lastNum, "\n" );
+            print( "lastNumbModal = ", lastNumbModal, "\n" );
 #endif
         endif
 
-        //print( [STR] labelBuffer[ controlPage_RawValues[index] ]);
+        //print( [STR] modalLabelBuffer[ controlPage_RawValues[index] ]);
 
         if( i == 5)
-            Y := ( (MAX_Y+1) / 6) * i + ((MAX_Y+1) / 24) -5;
+            YY := ( (MAX_Y+1) / 6) * i + ((MAX_Y+1) / 24) -5;
         endif
 
-        gfx_RectangleFilled( X * (j-1) + MAX_X/ 92,
-                            Y + MAX_Y/10 ,
-                            X * (j-1) + MAX_X/9 + 5,
-                            Y + MAX_Y/10 + 15,
+        gfx_RectangleFilled( XX * (j-1) + MAX_X/ 92,
+                            YY + MAX_Y/10 ,
+                            XX * (j-1) + MAX_X/9 + 5,
+                            YY + MAX_Y/10 + 15,
                             BLACK);
 
-        gfx_MoveTo( X * (j-1) + MAX_X/92, Y + MAX_Y/10  );
+        gfx_MoveTo( XX * (j-1) + MAX_X/92, YY + MAX_Y/10  );
         txt_Width(1);
         txt_Height(2);
         txt_FGcolour(WHITE);
@@ -1135,7 +1165,7 @@ func display_ParamValue( var controlNumber )
             controlPage_RawValues[index] := 1;
         endif
 
-        to(TEXT); print( [STR] labelBuffer[ controlPage_RawValues[index] ] );
+        to(TEXT); print( [STR] modalLabelBuffer[ controlPage_RawValues[index] ] );
 
         //txt_Height(1);
         //print("\n controlPage_RawValues[index] = ", controlPage_RawValues[index], "  index = ", index );
@@ -1150,5 +1180,189 @@ endfunc
 
 
 
+
+
+func display_ParamLabel( var controlNumber )
+    var labPtr, labLength;
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    // IN CUSTOMIZATION MODE, display a PARAMETER LABEL at the right location on the screen
+    ///////////////////////////////////////////////////////////////////////////////////////////
+
+    index := controlNumber;
+    i := controlNumber/8;
+    j := controlNumber - ( i * 8 );
+    i := i + 1;
+    j := j + 1;
+    XX := (MAX_X +1) / 8;
+    YY :=  ( (MAX_Y+1) / 6) * i + ((MAX_Y+1) / 24);
+
+       //////////////////////////////////////////////////////////////////////////
+       // Load list of Param Label if it is not allready loaded
+       // Clear buffer memory if needed
+       // Load Param Labels file "ET%.txt"
+       //////////////////////////////////////////////////////////////////////////
+       if( lastLoadedEffectParametersList != CurrentControlPage_EffectTypeID )
+
+            // Memory de-allocation of previous list of parameter labels
+            if( lastNumbParam> 0)
+                for(k := lastNumbParam -1; k >= 0 ; k--)
+                    res := mem_Free( paramLabelBuffer[k] );
+                    if ( res == 0  )
+                        gfx_MoveTo(0,60);
+                        to(TEXT); print( "MEMORY DE-ALLOC ERROR at n°", k, "\n" );
+                    else
+                        //print("DE-ALLOCATED = ", res, "\n" );
+                        //pause(100);
+                    endif
+                next
+            endif
+
+#ifdef DEBUG2
+            startTime := sys_T();
+            gfx_MoveTo(0,10);
+            print("LOADING  = ", sys_T(), "\n");
+            gfx_MoveTo(0,20);
+            print( "lastLoadedEffectParametersList = ", lastLoadedEffectParametersList, "\n" );
+            gfx_MoveTo(0,30);
+            print( "CurrentControlPage_EffectTypeID = ", CurrentControlPage_EffectTypeID, "\n" );
+            gfx_MoveTo(0,40);
+            print( "lastNumbParam = ", lastNumbParam, "\n" );
+            pause(10000);
+#endif
+
+            // BUILD THE FILE NAME
+            filePtr := str_Ptr(fileName);
+            str_Copy(filePtr, "");
+            to(fileName); print("ET", CurrentControlPage_EffectTypeID + 2, ".txt\0");
+    //gfx_MoveTo(0,10);
+    //to(TEXT);print("FileName ", [STR]fileName,"\n");
+            // OPEN THE PARAMETER LABELS FILE
+            FP2 := file_Open(filePtr, 'r');
+            if( file_Error() > 0)
+                to(TEXT);print("File ", [STR]fileName,"  not found\n", "File ERROR = ", file_Error() );
+                pause(500);
+                //continue;
+            endif
+
+            // READ THE NUMBER OF RECORDS
+            p := str_Ptr(tempoSTR);
+            str_Copy( p, "");
+            file_GetS(tempoSTR, 99, FP2);
+    //to(TEXT);print("Raw Line read ", [STR]tempoSTR,"\n");
+            p := str_Ptr( tempoSTR );
+            str_GetW( &p, &numberOf_Param );
+
+            // READ ALL THE RECORD
+
+   //gfx_MoveTo(0,50);
+   //to(TEXT); print("numberOf_Param ", numberOf_Param, "\n");
+
+            for(k := 0; k < numberOf_Param; k++)
+   //gfx_MoveTo(0,60);
+                p := str_Ptr( tempoSTR2 );
+                str_Copy(p, "");
+                //Read a full line of the file into the res buffer
+                res := file_GetS(tempoSTR2, 99, FP2);
+                //Read the Parameter ID
+                str_GetW(&p,&paramIDBuffer[k]);
+  //to(TEXT); print("Line ",k, " read = ", [STR] tempoSTR2, "\n");
+  //to(TEXT); print("&paramIDBuffer[",k, "] = ", paramIDBuffer[k], "\n");
+                length := str_Length( p );
+  //to(TEXT); print("Length of line ", k, " = ", length, "\n");
+                paramLabelBuffer[k] := mem_Alloc( length +1 );
+                if( paramLabelBuffer[k] == 0 )
+                     to(TEXT); print(" Memory ALLOC error for label n° ", k );  pause(500);
+                endif
+                //
+                p := str_Ptr( p );
+                p2 := str_Ptr( paramLabelBuffer[k] );
+                str_Copy(p2, "");
+                str_Copy(p2, p);
+ //to(TEXT); print("Value stored in paramLabel[", k, "] = ", [STR] paramLabelBuffer[k], "\n");
+ //pause(500);
+                if( file_Error() == FE_EOF )
+                    to(TEXT); print("File", [STR]fileName,"  not closed\n", "File ERROR = ", file_Error() );  pause(500);
+                    break;
+                endif
+            next
+
+#ifdef DEBUG2
+            gfx_MoveTo(0,50);
+            freeMem := mem_Heap();
+            print("FreeMem = ", freeMem, "\n");
+            pause(2000);
+#endif
+            // CLOSE THE FILE
+            res := file_Close(FP2);
+            if( res == 0)
+                to(TEXT); print("File", [STR]fileName,"  not closed\n", "File ERROR = ", file_Error() );  pause(500);
+            endif
+
+            // KEEP TRACK OF THE LAST EFFECT PARAMETER LIST THAT WAS LOADED
+            lastLoadedEffectParametersList := CurrentControlPage_EffectTypeID;
+            lastNumbParam := numberOf_Param;
+
+#ifdef DEBUG2
+            to(TEXT);
+            gfx_MoveTo(0,50);
+            print( "lastLoadedEffectParametersList = ", lastLoadedEffectParametersList, "\n" );
+            gfx_MoveTo(0,60);
+            print( "lastNumbParam = ", lastNumbParam, "\n" );
+#endif
+
+        endif
+
+        //print( [STR] paramLabelBuffer[ controlPage_RawValues[index] ]);
+
+        // CALCULATE THE DISPLAY LOCATION
+        if( i == 5)
+            YY := ( (MAX_Y+1) / 6) * i + ((MAX_Y+1) / 24) -5;
+        endif
+
+        gfx_RectangleFilled( XX * (j-1) + MAX_X/ 92,
+                            YY + MAX_Y/10 ,
+                            XX * (j-1) + MAX_X/9 + 5,
+                            YY + MAX_Y/10 + 15,
+                            BLACK);
+
+        gfx_MoveTo( XX * (j-1) + MAX_X/92, YY + MAX_Y/10  );
+        txt_Width(1);
+        txt_Height(2);
+        txt_FGcolour(WHITE);
+
+   //gfx_MoveTo(0,0);
+
+        //DISPLAY THE LABEL OF THE PARAMETER IN THE RIGHT LOCATION ON THE SCREEN
+        for(k := 0; k < lastNumbParam; k++)
+   //to(TEXT); print("k = ", k, " paramLabelBuffer", [STR] paramLabelBuffer[k], "\n");
+            if( paramIDBuffer[k] == controlPage_MIDIValues[controlNumber] )
+                p := str_Ptr( paramLabelBuffer[k]  );
+                p2 := str_Ptr( controlPage_Labels[index]  );
+                str_Copy(p2, "");
+                str_Copy(p2, p);
+   //to(TEXT); print("k = ", k, " index = ", index, " paramLabelBuffer", [STR] paramLabelBuffer[k], " controlPage_Labels", [STR] controlPage_Labels[index], "\n");
+                break;
+            endif
+        next
+
+//txt_Bold(OFF);
+//txt_FGcolour(RED);
+//txt_BGcolour(BLACK);
+//txt_FontID (FONT1);
+
+        //to(TEXT); print( [STR] paramLabelBuffer[ controlPage_RawValues[index] ] );
+        to(TEXT); print( [STR] controlPage_Labels[ index ] );
+
+        //txt_Height(1);
+        //print("\n controlPage_RawValues[index] = ", controlPage_RawValues[index], "  index = ", index );
+
+        //elapsed := sys_T() - startTime;
+        //to(TEXT);
+        //print(elapsed);
+        //putstr("\n");
+    //endif
+
+    return;
+endfunc
 
 
