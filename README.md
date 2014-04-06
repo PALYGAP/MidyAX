@@ -16,6 +16,13 @@ Some parts of the code are not perfects but I am working on improving it and mak
 I hope that the code can be useful to other people.
 
 
+IMPORTANT Softwares/documents from other people : 
+
+          - ARDUINO MIDI LIBRARY by François Best
+          - the BC MIDI Implementation.pdf by Mark van den Berg
+          - and quite a few others
+
+
 
 The Software is provided as is with no warranty.
 
