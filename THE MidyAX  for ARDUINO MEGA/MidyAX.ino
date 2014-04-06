@@ -1,27 +1,28 @@
-////////////////////////////////////////////////////////////////////////////////////////////
-// PROGRAM:     PROTOTYPE of MidyAX - BCR2000 to AXE-FX MIDI orchestrator
-// HARDWARE:    ARDUINO MEGA, 4 MIDI ports with a MIDI-IN and MIDI-OUT for each port.
+/////////////////////////////////////////////////////////////////////////////////////////////////
+// PROGRAM:     MidyAX - BCR2000 to AXE-FX MIDI communication orchestrator
+// AIM:         Provide enhanced usability of the AXE-FX by making it possible to set the 
+//              AXE-FX parameters with a hardware interface (knobs/switches of the BCR2000) 
+// HARDWARE:    ARDUINO MEGA 128, 4 MIDI ports with a MIDI-IN and MIDI-OUT for each port.
 // CREATOR:     Eric FEUILLEAUBOIS
-// COPYRIGHTS:  LGNU
-////////////////////////////////////////////////////////////////////////////////////////////
+// LICENSE:     GNU license v3 - That means OPEN SOFWARE, COPYLEFT and hope it's useful to you
+// IMPORTANT Softwares/documents from other people : 
+//              - ARDUINO MIDI LIBRARY by François Best
+//              - the BC MIDI Implementation.pdf by Mark van den Berg
+//              - and quite a few others
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 ///////////////
 //  DEFINES  //
 ///////////////
-//#define DEBUG
-//#define DEBUG2
-//#define DEBUG3
-//#define DEBUG4
-//#define DEBUG5
-//#define DEBUG6
 
 //#define AXE_FX_II
 //#define POD_XT_LIVE
-//#define DEBUG_TEST  // Debug for MidyAX test function 
 #define ELECTRONIE_PROTO
 #define LCD_PRESENT
 
 //////////////  INCLUDES ///////////////////////
+#include "DEBUG.h"
 #include "AXE_FX.h"
 #include "BCR2000.h"
 #include "MidyAX.h"
@@ -237,7 +238,7 @@ void setup()
 
 
   // IF in DEBUG mode SERIAL UART-0 BEGINS
-  #if (defined(DEBUG) || defined(DEBUG2) || defined(DEBUG3) || defined(DEBUG4) || defined(DEBUG5) || defined(DEBUG6) || defined(DEBUG_TEST) )
+  #if defined(IN_DEBUG_MODE)
     Serial.begin(115200);
     Serial.println(); Serial.println();  
     Serial.print(F("RAM: freeMemory ")); Serial.println(freeMemory(), DEC);
@@ -382,19 +383,8 @@ void setup()
   //if ( Axe_Fx_Version == 0x00) { test(); }      //&& Axe_Fx_Type == 0xFF )  
   
   
-
-  /////////////////////////
-  //  BCR2000 SPECIFICS  // 
-  /////////////////////////
-  // Must be after SPI start-up
   
-  //BCR2000_Init_Device (1, 32);
-  ////////////////BCR2000_Init_Device(1, 1); // Only configure preset #1 of the BCR2000. For test only
-  //Serial2.end();
-  //MIDI_BCR2000.begin( BCR2000_MIDI_CHANNEL );
-
-  
-  #if (defined(DEBUG) || defined(DEBUG2) || defined(DEBUG3) || defined(DEBUG4) || defined(DEBUG5) || defined(DEBUG6) || defined(DEBUG_TEST) )
+  #if defined(IN_DEBUG_MODE)
     Serial.println(); Serial.println();  
     Serial.print(F("END OF SETUP"));Serial.println("");
     Serial.print(F("RAM: freeMemory ")); Serial.println(freeMemory(), DEC);
@@ -656,7 +646,7 @@ void  ManageSystemExclusiveMessage (byte *incoming_sysex, byte incoming_size)
       }  ////// RISK of autocall
 
 
-      // After loding the Effects Chain description (LAYOUT)
+      // After loading the Effects Chain description (LAYOUT)
       // starts loading parmeters for the first EFFECT BLOCK in the current preset
       StartParamLoading( FirstOnIndex);
       //StartParamLoading( FirstOnIndex); //TODO : REMOVE and imrpove Get_Send_Param_Values for first load !!
@@ -926,7 +916,7 @@ void Get_Send_Param_Values( void )
   
   /////////
   ////////
-  delay(100); // TEMPO -- CHECK WHY IT IS NEEDED TO MAKE SURE THAT ALL THE INIT VALUE ARE RECEIVED PROPERLY
+  delay(100); // TODO -- CHECK WHY IT IS NEEDED TO MAKE SURE THAT ALL THE INIT VALUE ARE RECEIVED PROPERLY
   ////////
   ////////
   
@@ -1073,8 +1063,9 @@ void StartParamLoading( byte Target_CP_Effect_Number )
 
       /////////////////////////////////////////////////////////////////////////////////////
       ///////////  Change to the EDIT page of the EFFECT BLOCK on the AXE-FX    ///////////
+      ///////////  deactivated for now cause interfere with preset change on AXE-FX
       /////////////////////////////////////////////////////////////////////////////////////
-      sysex_mes[3] = 0x03;  //MODEL 3
+      /*sysex_mes[3] = 0x03;  //MODEL 3
       sysex_mes[4] = 0x37;  // Function SYSEX_EDIT_EFFECT
       if ( CS_Effect_ID < 0x80 )
       {
@@ -1086,7 +1077,7 @@ void StartParamLoading( byte Target_CP_Effect_Number )
         sysex_mes[6] = 0x01;
       }          
       sysex_mes[7] = Calculate_CheckSum( sysex_mes, 7);
-      MIDI_AXE.sendSysEx( byte( 8 ), sysex_mes, false );
+      MIDI_AXE.sendSysEx( byte( 8 ), sysex_mes, false );*/
 
 
 

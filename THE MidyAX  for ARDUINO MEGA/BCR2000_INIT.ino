@@ -1,9 +1,17 @@
-////////////////////////////////////////////////////////////////////////////////////////////
-// PROGRAM:     PROTOTYPE of MidyAX - BCR2000 to AXE-FX MIDI orchestrator
-// HARDWARE:    ARDUINO MEGA, 4 MIDI ports with a MIDI-IN and MIDI-OUT for each port.
+/////////////////////////////////////////////////////////////////////////////////////////////////
+// PROGRAM:     MidyAX - BCR2000 to AXE-FX MIDI communication orchestrator
+// AIM:         Provide enhanced usability of the AXE-FX by making it possible to set the 
+//              AXE-FX parameters with a hardware interface (knobs/switches of the BCR2000) 
+// HARDWARE:    ARDUINO MEGA 128, 4 MIDI ports with a MIDI-IN and MIDI-OUT for each port.
 // CREATOR:     Eric FEUILLEAUBOIS
-// COPYRIGHTS:  LGNU
-////////////////////////////////////////////////////////////////////////////////////////////
+// LICENSE:     GNU license v3 - That means OPEN SOFWARE, COPYLEFT and hope it's useful to you
+// IMPORTANT Softwares/documents from other people : 
+//              - ARDUINO MIDI LIBRARY by François Best
+//              - the BC MIDI Implementation.pdf by Mark van den Berg
+//              - and quite a few others
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+//#include "DEBUG.h"
 
 void BCR2000_Customize_Conf( byte BCR2000_Preset_Number )
 {
@@ -23,7 +31,17 @@ void BCR2000_Customize_Conf( byte BCR2000_Preset_Number )
   BCR2000_SysEx[7] = 0x00;  // Index LSB
 
   SYSEX_counter = 0;
-  //BCR2000_send_SYSEX( "$rev R1" );
+/*  BCR2000_send_SYSEX( "$rev R1" );
+  BCR2000_send_SYSEX( "$global" );
+  BCR2000_send_SYSEX( ".midimode S-4" );
+  BCR2000_send_SYSEX( ".startup last" );
+  BCR2000_send_SYSEX( ".footsw auto" );  
+  BCR2000_send_SYSEX( ".rxch 1" );
+  BCR2000_send_SYSEX( ".deviceid 1" );
+  BCR2000_send_SYSEX( ".txinterval 50" );
+  BCR2000_send_SYSEX( ".deadtime 0" );
+  BCR2000_send_SYSEX( "$end" );
+*/  
 
 #ifdef DEBUG4
   Serial.println(F("STARTED Preset Init"));
@@ -35,7 +53,8 @@ void BCR2000_Customize_Conf( byte BCR2000_Preset_Number )
   ////////////////////////////////
   
   char messageStr[150];
-  
+ 
+   
   // BLOCK with only 1 iteration
   int i = BCR2000_Preset_Number;
   {    
@@ -62,7 +81,7 @@ void BCR2000_Customize_Conf( byte BCR2000_Preset_Number )
 #endif
 
     // TOP 8 encoder buttons   - Button n° 1 to 8  - CC n° 33 to 40
-    for(int j=1; j <= 16 ; j++)
+    for(int j=1; j <= 8 ; j++)
     {
       // Btempo not right for 9 to 16 till the 2 rows are in the Control Page Def !!!
       addr = (i-1) * (BCR2000_ENCODER_NUMBER + BCR2000_PUSH_BUT_NUMBER) + (32+j-1);
@@ -72,9 +91,9 @@ void BCR2000_Customize_Conf( byte BCR2000_Preset_Number )
       BCR2000_send_SYSEX( messageStr );
       sprintf( messageStr,"%s %i %i %i %i %s", "  .easypar CC", BCR2000_MIDI_CHANNEL, 32+j, 127, 0, "toggleon");
       BCR2000_send_SYSEX( messageStr );
-      if( Btempo != 254 )
-      { BCR2000_send_SYSEX( ".showvalue on" );}
-      else { BCR2000_send_SYSEX( ".showvalue off" ); }
+      sprintf( messageStr,"%s %s", "  .mode", "toggle");
+      BCR2000_send_SYSEX( messageStr );
+      BCR2000_send_SYSEX( ".showvalue on" );
     }
     
     // 16 Control Pages encoder buttons  - Button n° 33 to 48  - CC n° 41 to 56
@@ -164,19 +183,15 @@ void BCR2000_Customize_Conf( byte BCR2000_Preset_Number )
     //TOP 8 encoders - Encoder n° 1 to 8  - CC n° 1 to 8
     for(int j=1; j <= 8 ; j++)
     {
-        
 #ifdef DEBUG4
       Serial.print(F("i = ")); Serial.println(i,DEC);
       Serial.print(F("ControlPages_USER_Mapping[i-1]-2 = ")); Serial.println(ControlPages_USER_Mapping[i-1]-2,DEC);
       Serial.print(F("THE_Parameter = ")); Serial.println((int)&THE_Parameter,DEC);
 #endif     
-  
       sprintf( messageStr,"$encoder %i", j);
       BCR2000_send_SYSEX( messageStr );
-
       // The max number of Parameter is supposed to always be inferior to 127 
       sprintf( messageStr,"%s %i %i %i %i %s", ".easypar CC", BCR2000_MIDI_CHANNEL, j, 0, nbActifParam-1, "absolute");
-
       BCR2000_send_SYSEX( messageStr );
       BCR2000_send_SYSEX( ".showvalue on" ); BCR2000_send_SYSEX( ".mode bar" ); 
       BCR2000_send_SYSEX( ".resolution 100" );
@@ -191,18 +206,12 @@ void BCR2000_Customize_Conf( byte BCR2000_Preset_Number )
     //Bottom 24 encoders    //TOP 16 encoders - Encoder n° 33 to 56 - CC n° 9 to 32
     for(int j=1; j <= 24 ; j++)
     {
-
       sprintf( messageStr,"$encoder %i", 32+j);
       BCR2000_send_SYSEX( messageStr );
-
-        sprintf( messageStr,"%s %i %i %i %i %s", ".easypar CC", BCR2000_MIDI_CHANNEL, 8+j, 0, nbActifParam-1, "absolute");
-
+      sprintf( messageStr,"%s %i %i %i %i %s", ".easypar CC", BCR2000_MIDI_CHANNEL, 8+j, 0, nbActifParam-1, "absolute");
       BCR2000_send_SYSEX( messageStr );
       BCR2000_send_SYSEX( ".showvalue on" ); BCR2000_send_SYSEX( ".mode 1dot" ); 
       BCR2000_send_SYSEX( ".resolution 100" );
- 
-      sprintf( messageStr,".default %i", j);
-      BCR2000_send_SYSEX( messageStr );
     }
 
 #ifdef DEBUG4
@@ -217,6 +226,15 @@ void BCR2000_Customize_Conf( byte BCR2000_Preset_Number )
     delay(500);
   }
 
+  BCR2000_send_SYSEX( "$rev R1" );
+  sprintf( messageStr,"%s %i", "$recall", i);
+  BCR2000_send_SYSEX( "$end" );
+  delay(500);
+  
+  BCR2000_Init_Current_Preset_Controls_Values();
+  
+  Change_BCR2000_Preset( i+1, false);
+  Change_BCR2000_Preset( i, false);
   
 }
 
@@ -252,9 +270,6 @@ void BCR2000_Init_Device( byte START_Preset_Number, byte END_Preset_Number )
   BCR2000_send_SYSEX( ".deadtime 0" );
   BCR2000_send_SYSEX( "$end" );
   
-  //BCR2000_send_SYSEX( "" );
-
-
 #ifdef DEBUG4
   Serial.println(F("STARTED Preset Init"));
   //Serial.print("RAM: "); Serial.println(availableMemory(), DEC);
@@ -275,6 +290,10 @@ void BCR2000_Init_Device( byte START_Preset_Number, byte END_Preset_Number )
     BCR2000_send_SYSEX( "$rev R1" );
     sprintf( messageStr,"%s %i", "$recall", i);
     BCR2000_send_SYSEX( messageStr );
+ 
+#ifdef DEBUG7
+  delay(3000);
+#endif  
     
     BCR2000_send_SYSEX( "$preset" );
     BCR2000_send_SYSEX( ".init" );
@@ -294,8 +313,12 @@ void BCR2000_Init_Device( byte START_Preset_Number, byte END_Preset_Number )
   Serial.println(F("STARTED 8 encoder buttons INIT"));
 #endif
 
+#ifdef DEBUG7
+  delay(3000);
+#endif  
+
     // TOP 8 encoder buttons   - Button n° 1 to 8  - CC n° 33 to 40
-    for(int j=1; j <= 16 ; j++)
+    for(int j=1; j <= 8 ; j++)
     {
       // Btempo not right for 9 to 16 till the 2 rows are in the Control Page Def !!!
       addr = (i-1) * (BCR2000_ENCODER_NUMBER + BCR2000_PUSH_BUT_NUMBER) + (32+j-1);
@@ -305,10 +328,16 @@ void BCR2000_Init_Device( byte START_Preset_Number, byte END_Preset_Number )
       BCR2000_send_SYSEX( messageStr );
       sprintf( messageStr,"%s %i %i %i %i %s", "  .easypar CC", BCR2000_MIDI_CHANNEL, 32+j, 127, 0, "toggleon");
       BCR2000_send_SYSEX( messageStr );
+      sprintf( messageStr,"%s %s", "  .mode", "toggle");
+      BCR2000_send_SYSEX( messageStr );
       if( Btempo != 254 )
       { BCR2000_send_SYSEX( ".showvalue on" );}
       else { BCR2000_send_SYSEX( ".showvalue off" ); }
     }
+    
+#ifdef DEBUG7
+  delay(3000);
+#endif    
     
     // 16 Control Pages encoder buttons  - Button n° 33 to 48  - CC n° 41 to 56
     for(int j=1; j <= 16 ; j++)
@@ -320,6 +349,10 @@ void BCR2000_Init_Device( byte START_Preset_Number, byte END_Preset_Number )
       BCR2000_send_SYSEX( ".showvalue on" );
     }
 
+#ifdef DEBUG7
+  delay(3000);
+#endif
+
     // 2  group keys (1, 2, 3 and 4) - Button n° 57 to 60  - CC n° 57 to 60
     for(int j=1; j <= 4 ; j++)
     {
@@ -330,6 +363,9 @@ void BCR2000_Init_Device( byte START_Preset_Number, byte END_Preset_Number )
       BCR2000_send_SYSEX( ".showvalue on" );
     }
 
+#ifdef DEBUG7
+  delay(3000);
+#endif
 
     // 4  function keys (53 to 56) - Button n° 53 to 56  - CC n° 61 to 64
     for(int j=1; j <= 4 ; j++)
@@ -340,6 +376,10 @@ void BCR2000_Init_Device( byte START_Preset_Number, byte END_Preset_Number )
       BCR2000_send_SYSEX( messageStr );
       BCR2000_send_SYSEX( ".showvalue on" );
     }
+
+#ifdef DEBUG7
+  delay(3000);
+#endif
 
     // 2  preset +/- keys - Button n° 63 to 64  - CC n° 65 to 66
     sprintf( messageStr,"$button %i", 63);
@@ -355,6 +395,9 @@ void BCR2000_Init_Device( byte START_Preset_Number, byte END_Preset_Number )
     BCR2000_send_SYSEX( ".default 0" );
     BCR2000_send_SYSEX( ".showvalue on" );
 
+#ifdef DEBUG7
+  delay(3000);
+#endif
 
     // 4 User Button (bottom right - 49 to 52) - Button n° 49 to 52  - CC n° 67 to 70
     for(int j=1; j <= 4 ; j++)
@@ -366,7 +409,11 @@ void BCR2000_Init_Device( byte START_Preset_Number, byte END_Preset_Number )
       BCR2000_send_SYSEX( ".showvalue on" );
     }
 
-    // 2 Foot Switch (61 to 62) - Button n° 61 to 62  - CC n° 67 to 70
+#ifdef DEBUG7
+  delay(3000);
+#endif
+
+// 2 Foot Switch (61 to 62) - Button n° 61 to 62  - CC n° 67 to 70
     for(int j=1; j <= 4 ; j++)
     {
       sprintf( messageStr,"$button %i", 48 + j);
@@ -377,7 +424,9 @@ void BCR2000_Init_Device( byte START_Preset_Number, byte END_Preset_Number )
     }
 
 
-
+#ifdef DEBUG7
+  delay(3000);
+#endif
 
 #ifdef DEBUG4
   Serial.println(F("STARTED 8 top encoder INIT"));
@@ -425,8 +474,9 @@ void BCR2000_Init_Device( byte START_Preset_Number, byte END_Preset_Number )
 
       sprintf( messageStr,"$encoder %i", j);
       BCR2000_send_SYSEX( messageStr );
-      if(    THE_Parameter.type == AXEFX_INT_Parameter_Type_DEFINE
-          || THE_Parameter.type == AXEFX_INTXL_Parameter_Type_DEFINE )   // INT case --> Modal values
+      if( (THE_Parameter.type == AXEFX_INT_Parameter_Type_DEFINE 
+          || THE_Parameter.type == AXEFX_INTXL_Parameter_Type_DEFINE ) 
+          && THE_Parameter.numVals-1 <= 127) // INT case --> Modal values
       { 
         sprintf( messageStr,"%s %i %i %i %i %s", ".easypar CC", BCR2000_MIDI_CHANNEL, j, 0, THE_Parameter.numVals-1, "absolute");
       }
@@ -443,6 +493,10 @@ void BCR2000_Init_Device( byte START_Preset_Number, byte END_Preset_Number )
       }
       BCR2000_send_SYSEX( ".resolution 100" );
     }
+
+#ifdef DEBUG7
+  delay(3000);
+#endif
 
 #ifdef DEBUG4
   Serial.println(F("STARTED 24 bottom encoders INIT"));
@@ -478,8 +532,9 @@ void BCR2000_Init_Device( byte START_Preset_Number, byte END_Preset_Number )
 
       sprintf( messageStr,"$encoder %i", 32+j);
       BCR2000_send_SYSEX( messageStr );
-      if( THE_Parameter.type == AXEFX_INT_Parameter_Type_DEFINE 
-          || THE_Parameter.type == AXEFX_INTXL_Parameter_Type_DEFINE) // INT case --> Modal values
+      if( (THE_Parameter.type == AXEFX_INT_Parameter_Type_DEFINE 
+          || THE_Parameter.type == AXEFX_INTXL_Parameter_Type_DEFINE ) 
+          && THE_Parameter.numVals-1 <= 127) // INT case --> Modal values
       { 
         sprintf( messageStr,"%s %i %i %i %i %s", ".easypar CC", BCR2000_MIDI_CHANNEL, 8+j, 0, THE_Parameter.numVals-1, "absolute");
       }
@@ -496,8 +551,8 @@ void BCR2000_Init_Device( byte START_Preset_Number, byte END_Preset_Number )
       }
       BCR2000_send_SYSEX( ".resolution 100" );
  
-      sprintf( messageStr,".default %i", j);
-      BCR2000_send_SYSEX( messageStr );
+      //sprintf( messageStr,".default %i", 0);
+      //BCR2000_send_SYSEX( messageStr );
     }
 
 #ifdef DEBUG4
@@ -509,6 +564,7 @@ void BCR2000_Init_Device( byte START_Preset_Number, byte END_Preset_Number )
     BCR2000_send_SYSEX( messageStr );
 
     BCR2000_send_SYSEX( "$end" );
+
     delay(500);
   }
 

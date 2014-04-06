@@ -12,17 +12,20 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-void OTHER_ManageCC ( byte CC_channel, byte CC_number, byte CC_value )
-{
-  // RECEIVING TEST CCs
-  if( CC_channel == OTHER_MIDI_CHANNEL && CC_number == MIDI_TEST_CC_SENT)
-  {
-    OTHER_Received_CC_Value = CC_value;
-    //Serial.print("Message : "); Serial.print(CC_value, DEC); Serial.print(" received");
-  }
-  return;
-} 
+#ifndef DEBUG_H_
+#define DEBUG_H_
 
 
+  #define IN_DEBUG_MODE
+  //#define DEBUG
+  //#define DEBUG2
+  #define DEBUG3
+  //#define DEBUG4
+  //#define DEBUG5
+  //#define DEBUG6
+  //#define DEBUG7
+  //#define DEBUG_TEST
+  //#define DEBUG8 //Generation of the list of active parameter of an Effect Type
 
-
+  
+#endif // DEBUG_H_

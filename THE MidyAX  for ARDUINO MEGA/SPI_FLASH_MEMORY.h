@@ -1,18 +1,33 @@
-////////////////////////////////////////////////////////////////////////////////////////////
-// PROGRAM:     PROTOTYPE of MidyAX - BCR2000 to AXE-FX MIDI orchestrator
-// HARDWARE:    ARDUINO MEGA, 4 MIDI ports with a MIDI-IN and MIDI-OUT for each port.
+/////////////////////////////////////////////////////////////////////////////////////////////////
+// PROGRAM:     MidyAX - BCR2000 to AXE-FX MIDI communication orchestrator
+// AIM:         Provide enhanced usability of the AXE-FX by making it possible to set the 
+//              AXE-FX parameters with a hardware interface (knobs/switches of the BCR2000) 
+// HARDWARE:    ARDUINO MEGA 128, 4 MIDI ports with a MIDI-IN and MIDI-OUT for each port.
 // CREATOR:     Eric FEUILLEAUBOIS
-// COPYRIGHTS:  LGNU
-////////////////////////////////////////////////////////////////////////////////////////////
-
+// LICENSE:     GNU license v3 - That means OPEN SOFWARE, COPYLEFT and hope it's useful to you
+// IMPORTANT Softwares/documents from other people : 
+//              - ARDUINO MIDI LIBRARY by François Best
+//              - the BC MIDI Implementation.pdf by Mark van den Berg
+//              - and quite a few others
+/////////////////////////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////
 //  @file		SPI_FLASH_MEMORY.h
 //  Project		MIDYAX
 ////////////////////////////////////////////////////////
 
+
 #ifndef SPI_FLASH_MEMORY_H_
 #define SPI_FLASH_MEMORY_H_
+
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  // FUNCTIONS DECLARATION
+  int Read_EffectType_FromFLASH( byte effectTypeNumber, struct DYN_EffectType *theEffectType);
+  int Read_Parameter_FromFLASH( byte effectTypeNumber, byte parameterNumber , struct DYN_Parameter *theParameter);
+  int Read_ModalList_FromFLASH( int ModalListNumber, char **The_Modal_List , int *The_Modal_List_size );
+  byte Init_MAPPINGs( ); // TODO : Not used
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
   #include <avr/pgmspace.h>
   

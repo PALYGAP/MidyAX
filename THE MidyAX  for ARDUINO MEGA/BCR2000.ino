@@ -1,9 +1,15 @@
-////////////////////////////////////////////////////////////////////////////////////////////
-// PROGRAM:     PROTOTYPE of MidyAX - BCR2000 to AXE-FX MIDI orchestrator
-// HARDWARE:    ARDUINO MEGA, 4 MIDI ports with a MIDI-IN and MIDI-OUT for each port.
+/////////////////////////////////////////////////////////////////////////////////////////////////
+// PROGRAM:     MidyAX - BCR2000 to AXE-FX MIDI communication orchestrator
+// AIM:         Provide enhanced usability of the AXE-FX by making it possible to set the 
+//              AXE-FX parameters with a hardware interface (knobs/switches of the BCR2000) 
+// HARDWARE:    ARDUINO MEGA 128, 4 MIDI ports with a MIDI-IN and MIDI-OUT for each port.
 // CREATOR:     Eric FEUILLEAUBOIS
-// COPYRIGHTS:  LGNU
-////////////////////////////////////////////////////////////////////////////////////////////
+// LICENSE:     GNU license v3 - That means OPEN SOFWARE, COPYLEFT and hope it's useful to you
+// IMPORTANT Softwares/documents from other people : 
+//              - ARDUINO MIDI LIBRARY by François Best
+//              - the BC MIDI Implementation.pdf by Mark van den Berg
+//              - and quite a few others
+/////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 void Change_BCR2000_Preset ( int Preset_Number, boolean init)
@@ -142,33 +148,43 @@ void BCR2000_ManageCC ( byte CC_channel, byte CC_number, byte CC_value )
             Read_Parameter_FromFLASH( (byte) CS_Effect_Type_used, i , &THE_Parameter ); 
             if( strcmp( THE_Parameter.label, "") != 0)
             {
-              ID[i] = THE_Parameter.ID;
+              ID[nbActifParam] = THE_Parameter.ID;
               nbActifParam ++;
             }
  	  }
-          
-          // --> Done in uVGA program
-          // Process according to type of control (Encoder or encoder button)
-          // for parameter.displaytpe = 1 or 6 ==> buttons
-          
-          //int TEMPO = ( CC_number_dec /127 ) * (nbActifParam - 1);
-          CC_number_dec = ID[ TEMPO ];
-
+#ifdef DEBUG8
+          Serial.print(F("nbActifParam = ")); Serial.println(nbActifParam, DEC);
+          for(int i = 0 ; i <  nbActifParam ; i++)
+          {
+            Serial.print(F("ID[i] = ")); Serial.println( ID[i], DEC );
+ 	  }
+          Serial.print(F("ID[CC_value_dec] = ")); Serial.println( ID[CC_value_dec], DEC );
+          Serial.println();
+#endif          
           // BCR2000 sends back a CC_number_dec value from 0 to nbActifParam - 1
           // Change the mapping
-          int addr = CS_Preset_Number * (BCR2000_ENCODER_NUMBER + BCR2000_PUSH_BUT_NUMBER) + Last_Index_In_Mapping;
+          int addr = CS_Preset_Number * (BCR2000_ENCODER_NUMBER + BCR2000_PUSH_BUT_NUMBER) + Last_Index_In_Mapping - 1;
           EEPROM.write(addr, byte( ID[CC_value_dec] ) );
+
           //Send message to the uVGA
-          send_uvga_Y( Last_Index_In_Mapping, CC_value_dec );
+          send_uvga_Y( Last_Index_In_Mapping -1, ID[CC_value_dec] ); 
+          //Received CC range from 1 to 40 where Index range from 0 to 39
+          //TODO : Check Why do that ???
+          return;
         }
         
-
         if (  CC_number_dec >= 33  && CC_number_dec <= 40 )
         {
           // Process the customization of the 8 top encoder Buttons
           // Build the list of parameter with label (in AXE-EDIT) and store their Param_ID and count how many param for that Effect Type
           byte nbActifParam = 0;
           byte ID[200];
+          struct DYN_Parameter THE_Parameter;
+          byte CS_Effect_Type_used = CS_Effect_Type-2;
+          
+          // Manage the button press and the possition in the param list of each button
+          
+          // Move to entering custom mode ???
           for(int i = 0 ; i <  CurrentControlPage_EffectType.numOfParameters ; i++)
           {
             Read_Parameter_FromFLASH( (byte) CS_Effect_Type_used, i , &THE_Parameter ); 
@@ -178,9 +194,11 @@ void BCR2000_ManageCC ( byte CC_channel, byte CC_number, byte CC_value )
               nbActifParam ++;
             }
  	  }
-          
-        }
+          //TODO : Check Why do that ???
+          CC_number_dec = CC_number_dec - 1; //Received CC range from 1 to 40 where Index range from 0 to 39
 
+        return;
+        }
     }
 
 
@@ -199,7 +217,10 @@ void BCR2000_ManageCC ( byte CC_channel, byte CC_number, byte CC_value )
           
           CurrentBCR2000Preset = CS_Preset_Number;
           // CALLL current BCR2000 preset reconfigure
-          BCR2000_Customize_Conf( CurrentBCR2000Preset);
+          BCR2000_Customize_Conf( CurrentBCR2000Preset + 1);
+          Serial2.flush();
+          Serial2.end();
+          MIDI_BCR2000.begin( BCR2000_MIDI_CHANNEL );
         }
         else {
           CUSTOMIZE_STATE = false;
@@ -211,14 +232,39 @@ void BCR2000_ManageCC ( byte CC_channel, byte CC_number, byte CC_value )
       	CUSTOMIZE_STATE = false;  
       	MIDI_BCR2000.sendControlChange( byte(BCR2000_CUSTOMIZE_CC_DEFINE), byte(0), byte(1) );
         // Only when CUSTOMIZE_STATE goes from TRUE to FALSE
-        BCR2000_Init_Device( CurrentBCR2000Preset, CurrentBCR2000Preset);
-        
+        BCR2000_Init_Device( CurrentBCR2000Preset + 1, CurrentBCR2000Preset + 1);
+        Serial2.flush();
+        Serial2.end();
+        MIDI_BCR2000.begin( BCR2000_MIDI_CHANNEL );
+        // Reload the parameters and refresh the display
+        StartParamLoading( CS_Current_Effect_Number_In_CP );
       }
       return;
     }
 
 
+    // CONFIGURE THE BCR2000
+    if (  CC_number_dec == BCR2000_SCENE_UP_CC_DEFINE )
+    {
+      // Must be after SPI start-up
+      BCR2000_Init_Device (1, 32);
+  
+      //BCR2000_Init_Device (1, 32);
+      ////////////////BCR2000_Init_Device(1, 1); // Only configure preset #1 of the BCR2000. For test only
+      Serial2.flush();
+      Serial2.end();
+      MIDI_BCR2000.begin( BCR2000_MIDI_CHANNEL );
+      Change_BCR2000_Preset( CS_Preset_Number+1, false);
+      StartParamLoading( CS_Current_Effect_Number_In_CP );
+      
+      return;
+    }
 
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    ////   Process modification of a parammeter on the BCR2000 and send new param value to AXE-FX
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    
     // Check CC number in range
     if (  CC_number_dec >= 1  && CC_number_dec <= 40 )
     {
@@ -261,7 +307,7 @@ void BCR2000_ManageCC ( byte CC_channel, byte CC_number, byte CC_value )
             Serial.println(";");
 #endif
 
-       // TEST IF THE PARAMETER id the subType PARAM 
+       // TEST IF THE PARAMETER id the SubType PARAM of the Effect Type
        // If YES log event and "wait" for 200 ms
        // if 200 ms lasted do what subtype change
        if(  Btempo == CurrentControlPage_EffectType.subTypeParamID && CurrentControlPage_EffectType.subTypeParamID != -1 )
