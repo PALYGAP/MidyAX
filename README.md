@@ -15,5 +15,8 @@ Some parts of the code are not perfects but I am working on improving it and mak
 
 I hope that the code can be useful to other people.
 
-The Software is provided as is with no warranty
+
+
+The Software is provided as is with no warranty.
+
 AXE-FX is registered trademark
