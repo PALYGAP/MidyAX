@@ -7,7 +7,7 @@
 // LICENSE:     GNU license v3 - That means OPEN SOFWARE, COPYLEFT and hope it's useful to you
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define MIDYAX_VERSION "MidyAX   v0.574"
+#define MIDYAX_VERSION "MidyAX   v0.575"
 
 ///////////////
 //  DEFINES  //
