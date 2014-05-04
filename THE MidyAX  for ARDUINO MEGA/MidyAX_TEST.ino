@@ -5,10 +5,6 @@
 // HARDWARE:    ARDUINO MEGA 128, 4 MIDI ports with a MIDI-IN and MIDI-OUT for each port.
 // CREATOR:     Eric FEUILLEAUBOIS
 // LICENSE:     GNU license v3 - That means OPEN SOFWARE, COPYLEFT and hope it's useful to you
-// IMPORTANT Softwares/documents from other people : 
-//              - ARDUINO MIDI LIBRARY by François Best
-//              - the BC MIDI Implementation.pdf by Mark van den Berg
-//              - and quite a few others
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -141,7 +137,7 @@ void test( void )
       delay(100);
     }
     send_uvga_1( );
-    send_uvga_A(0);
+    send_uVGA_A___Current_Preset();
     if( nberror == 0 ) { digitalWrite(sysExLedPin, HIGH); delay(2000); digitalWrite(sysExLedPin, LOW); delay(2000); }
     else { digitalWrite(parValueLedPin, HIGH); delay(2000); digitalWrite(parValueLedPin, LOW); delay(2000); }
 
@@ -195,4 +191,6 @@ void test( void )
     else { send_uvga_2( "Link from MIDI port OTHER to MIDI port BCR2000 is not working" ); }
   
 } // END TEST MODE code
+
+
 

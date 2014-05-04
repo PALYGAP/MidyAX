@@ -5,10 +5,6 @@
 // HARDWARE:    ARDUINO MEGA 128, 4 MIDI ports with a MIDI-IN and MIDI-OUT for each port.
 // CREATOR:     Eric FEUILLEAUBOIS
 // LICENSE:     GNU license v3 - That means OPEN SOFWARE, COPYLEFT and hope it's useful to you
-// IMPORTANT Softwares/documents from other people : 
-//              - ARDUINO MIDI LIBRARY by François Best
-//              - the BC MIDI Implementation.pdf by Mark van den Berg
-//              - and quite a few others
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -18,19 +14,10 @@
 
 #include <avr/pgmspace.h>
 
-
-
 //////////////////////
-//  BCR2000 SETUP  // 
+// EEPROM MEMORY
 //////////////////////
-#define BCR2000_ENCODER_NUMBER 32
-#define BCR2000_PUSH_BUT_NUMBER 8
-
-
-#define BCR2000_NumberOf_ControlPage_Buttons_DEFINE 16
-#define BCR2000_NumberOf_Encoders_DEFINE 32
-#define BCR2000_NumberOf_EncSwitchButtons_DEFINE 8
-#define BCR2000_Max_NumberOf_ControlPage_DEFINE 32
+#define EEPROM_START_QUICKACCESS_PAGE 3000  // Out of 4096 available bytes on the ARDUINO MEGA
 
 
 // Mapping des Effect Type avec les 30 CONTROL PAGEs 
@@ -51,8 +38,9 @@ byte ControlPages_USER_Mapping[ BCR2000_Max_NumberOf_ControlPage_DEFINE ] = {
   /* 13 */  3,  /* GRAPHICEQ */
   /* 14 */  4,  /* PARAMETRICEQ */
   /* 15 */ 18,  /* FILTER */
-  /* 16 */ 22,  /* MIXER */
-
+//  /* 16 */ 22,  /* MIXER */
+  /* 16 */ 100,  /* QuickAccess Page 1*/
+  
   /* 17 */ 31,  /* MULTIBANDCOMP */
   /* 18 */ 17,  /* PITCH */
   /* 19 */ 20,  /* ENHANCER */
@@ -69,7 +57,8 @@ byte ControlPages_USER_Mapping[ BCR2000_Max_NumberOf_ControlPage_DEFINE ] = {
   /* 29 */ 33,  /* RESONATOR */
   /* 30 */ 15,  /* FORMANT */
   /* 31 */ 28,  /* CROSSOVER */
-  /* 32 */ 34,  /* VOLPAN */
+//  /* 32 */ 34,  /* VOLPAN */
+  /* 16 */ 101,  /* QuickAccess Page 1*/
 };
 
 //short ControlPages_USER_Parameter_Mapping[ BCR2000_Max_NumberOf_ControlPage_DEFINE ] = {
@@ -110,7 +99,7 @@ byte ControlPages_USER_Mapping[ BCR2000_Max_NumberOf_ControlPage_DEFINE ] = {
 //};
 
               
-PROGMEM byte PROGMEM_BYTE___BCR2000_Encoder_CC_Mapping[ BCR2000_ENCODER_NUMBER + BCR2000_PUSH_BUT_NUMBER ] = {
+PROGMEM byte PROGMEM_BYTE___BCR2000_Encoder_CC_Mapping[ BCR2000_NumberOf_Encoders_DEFINE + BCR2000_NumberOf_EncSwitchButtons_DEFINE ] = {
   /*  1 */  1,  
   /*  2 */  2, 
   /*  3 */  3, 
@@ -163,12 +152,12 @@ PROGMEM byte PROGMEM_BYTE___BCR2000_Encoder_CC_Mapping[ BCR2000_ENCODER_NUMBER +
 ////////////////////
 
 
-#define MAX_NUMBER_EFFECTS 71
+#define MAX_NUMBER_EFFECTS_BLOCK 71
 #define NUMBER_EFFECT_TYPE 39
 
            
 
-PROGMEM byte PROGMEM_BYTE___EffectBlock__ONByPass_CC[MAX_NUMBER_EFFECTS] = {
+PROGMEM byte PROGMEM_BYTE___EffectBlock__ONByPass_CC[MAX_NUMBER_EFFECTS_BLOCK] = {
 37, 38, 39, 40, 41, 42, 43, 44, 45, 46,
 47, 48, 49, 50, 59, 51, 0, 0, 52, 53,
 54, 55, 56, 57, 58, 60, 61, 62, 63, 64,
@@ -178,7 +167,7 @@ PROGMEM byte PROGMEM_BYTE___EffectBlock__ONByPass_CC[MAX_NUMBER_EFFECTS] = {
 99, 92, 93, 94, 95, 96, 97, 98, 0, 0,
 0};
 
-PROGMEM byte PROGMEM_BYTE___EffectBlock__XY_CC[MAX_NUMBER_EFFECTS] = {
+PROGMEM byte PROGMEM_BYTE___EffectBlock__XY_CC[MAX_NUMBER_EFFECTS_BLOCK] = {
 100, 101, 102, 103, 104, 105, 0, 0, 0, 0,
 106, 107, 108, 109, 0, 0, 0, 0, 0, 0,
 0, 0, 110, 111, 0, 0, 0, 0, 0, 0,
@@ -197,7 +186,7 @@ struct AXE_effect {
 };  
 
 // Defines all the AXE_effect Block structure
-AXE_effect The_AXE_Effects [MAX_NUMBER_EFFECTS] ={
+AXE_effect The_AXE_Effects [MAX_NUMBER_EFFECTS_BLOCK] ={
 { 0x64, 	43, 	0 },
 { 0x65, 	44, 	0 },
 { 0x66, 	62, 	0 },
@@ -273,7 +262,7 @@ AXE_effect The_AXE_Effects [MAX_NUMBER_EFFECTS] ={
 
 
                      
-PROGMEM byte PROGMEM_BYTE___AXEFX_Effect_ID[ MAX_NUMBER_EFFECTS ] = {
+PROGMEM byte PROGMEM_BYTE___AXEFX_Effect_Block_ID[ MAX_NUMBER_EFFECTS_BLOCK ] = {
   0x64,0x65,0x66,0x67,0xA0,0xA1,0x68,0x69,0xA2,0xA3,
   0x6A,0x6B,0x6C,0x6D,0x6E,0x6F,0x70,0x71,0x72,0x73,
   0x74,0x75,0x76,0x77,0x78,0x79,0x7A,0x7B,0x7C,0x7D,
@@ -285,7 +274,7 @@ PROGMEM byte PROGMEM_BYTE___AXEFX_Effect_ID[ MAX_NUMBER_EFFECTS ] = {
 
 
 // Type of each effect block
-PROGMEM byte PROGMEM_BYTE___AXEFX_Effect_Type[ MAX_NUMBER_EFFECTS ] = {
+PROGMEM byte PROGMEM_BYTE___AXEFX_Effect_Block_to_Effect_Type_ID[ MAX_NUMBER_EFFECTS_BLOCK ] = {
   2,2,3,3,3,3,4,4,4,4,
   5,5,6,6,7,7,8,8,9,9,
   10,10,11,11,12,12,13,13,14,14,
@@ -294,7 +283,16 @@ PROGMEM byte PROGMEM_BYTE___AXEFX_Effect_Type[ MAX_NUMBER_EFFECTS ] = {
   27,28,28,29,29,30,31,31,32,32,
   33,33,34,34,34,34,35,36,37,38, 39
   };
-
+ 
+PROGMEM byte PROGMEM_BYTE___AXEFX_Effect_Block_to_Effect_Type_ID_NEW[ MAX_NUMBER_EFFECTS_BLOCK ] = { 
+  2, 2, 3, 3, 4, 4, 5, 5, 6, 6,
+  7, 7, 8, 8, 9, 9, 10, 10, 11, 11,
+  12, 12, 13, 13, 14, 14, 15, 34, 16, 16,
+  17, 18, 18, 19, 19, 20, 21, 22, 22, 35,
+  36, 37, 23, 24, 25, 25, 26, 27, 28, 28,
+  29, 29, 30, 17, 31, 31, 32, 32, 33, 33,
+  3, 3, 4, 4, 18, 18, 34, 34, 34, 38, 39   
+};
 
 // Number of block per effect type
 PROGMEM byte PROGMEM_BYTE___AXEFX_Effect_Type_Number[ NUMBER_EFFECT_TYPE ] = {
@@ -336,3 +334,5 @@ char CurentPreset_AXEFX_Preset_Name[32];
 
 
 #endif // MIDYAX_H_
+
+

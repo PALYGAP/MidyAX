@@ -5,10 +5,6 @@
 // HARDWARE:    ARDUINO MEGA 128, 4 MIDI ports with a MIDI-IN and MIDI-OUT for each port.
 // CREATOR:     Eric FEUILLEAUBOIS
 // LICENSE:     GNU license v3 - That means OPEN SOFWARE, COPYLEFT and hope it's useful to you
-// IMPORTANT Softwares/documents from other people : 
-//              - ARDUINO MIDI LIBRARY by François Best
-//              - the BC MIDI Implementation.pdf by Mark van den Berg
-//              - and quite a few others
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 extern unsigned long WRITING_currentMemAddresse;
@@ -205,37 +201,6 @@ byte Init_MAPPINGs( )
 }
 
 
-/*
-Read_Mapping_ControlPage( byte type, byte set, byte Page_number, byte SubPage_number, byte Control_number ) 
-{
-// Reads a full Control Page from the SPI FLASH and copy it to the CurrentControlPage_Parameter_Mapping
-
-  //Checks that type is in the allowed values
-  
-  //Check that set is in the allowed values
-
-  
-}
-
-
-Write_Mapping_ControlPage( byte type, byte set, byte Page_number, byte SubPage_number, byte Control_number ) 
-{
-// Write the CurrentControlPage_Parameter_Mapping to a full Control Page to the SPI FLASH
-    
-}
-*/
-
-
-
-////////////////////////////////////////////////////
-// Reading the MidyAX structures
-////////////////////////////////////////////////////
-/*
-int Read_EffectType_FromFLASH( byte effectTypeNumber, struct DYN_EffectType *theEffectType)
-int Read_Parameter_FromFLASH( byte effectTypeNumber, byte parameterNumber , struct DYN_Parameter *theParameter) 
-int Read_ModalList_FromFLASH( int ModalListNumber, char **The_Modal_List , int *The_Modal_List_size )
-int Read_EffectBlock_FromFLASH( struct DYN_EffectBlock *theEffectBlockArray)   NOT ACTIVE, TO BE TESTED
-*/
 
 unsigned long currentMemAddresse, currentMemAddresse2, ParamListStartAddress;
 
@@ -324,20 +289,6 @@ int Read_EffectType_FromFLASH( byte effectTypeNumber, struct DYN_EffectType *the
   Serial.println();
 #endif
 
-
-  //////////////////////////////////////////////////////////////////////
-  //////// Reading the PARAMETERS of the Effect type  //////////////////
-  //////////////////////////////////////////////////////////////////////
-
-  currentMemAddresse = startAddresseOfParameterAddresses;
-
-/*
-  for(int i= 0; i < theEffectType->numOfParameters ; i++)
-  //for(int i= 0; i < 4 ; i++)
-  {
-    Read_Parameter_FromFLASH( effectTypeNumberReceived, i, theParametersArray );
-  }
-*/ 
 }
 
 
@@ -548,4 +499,6 @@ int Read_EffectBlock_FromFLASH( struct DYN_EffectBlock *theEffectBlockArray)
         byte ONByPass_CC;
         byte XY_CC;
 */
+
+
 

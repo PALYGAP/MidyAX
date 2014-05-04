@@ -5,16 +5,15 @@
 // HARDWARE:    ARDUINO MEGA 128, 4 MIDI ports with a MIDI-IN and MIDI-OUT for each port.
 // CREATOR:     Eric FEUILLEAUBOIS
 // LICENSE:     GNU license v3 - That means OPEN SOFWARE, COPYLEFT and hope it's useful to you
-// IMPORTANT Softwares/documents from other people : 
-//              - ARDUINO MIDI LIBRARY by François Best
-//              - the BC MIDI Implementation.pdf by Mark van den Berg
-//              - and quite a few others
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+#define MIDYAX_VERSION "MidyAX   v0.574"
 
 ///////////////
 //  DEFINES  //
 ///////////////
+
+
 
 //#define AXE_FX_II
 //#define POD_XT_LIVE
@@ -27,6 +26,8 @@
 #include "BCR2000.h"
 #include "MidyAX.h"
 #include "SPI_FLASH_MEMORY.h"
+#include "uVGA.h"
+
 //MIDI
 #include <MIDI_AXE.h>
 #include <MIDI_BCR2000.h>
@@ -94,12 +95,12 @@ LiquidCrystal lcd(27, /* RS */
 //////////////////////
 //  BCR2000 SETUP  // 
 //////////////////////
-short CS_Preset_Number, CS_Effect_Type, CS_Current_Effect_Number_In_CP, CS_Effect_NumSel_State;
+short CS_Preset_Number, CS_Effect_Type_ID, CS_Current_Effect_Number_In_CP, CS_Effect_NumSel_State;
 boolean CS_Effect_OBState, CS_Effect_XYState;
-byte CS_Effect_ID;
+byte CS_Effect_Block_ID;
 boolean CS_Loaded = false;
-int CS_Number_Active_Encoder = 0, CS_BCR2000_ACTIVE_BUTTON = 0;
-boolean PB16_state;
+int CS_NumberOf_Active_Controls = 0, CS_BCR2000_ACTIVE_BUTTON = 0;
+boolean SHIFT_PB__state;
 //byte *BCR2000_SysEx;
 byte BCR2000_SysEx[200];
 int SYSEX_counter;
@@ -118,16 +119,18 @@ unsigned long typeDelay_lastTime;
 #define CurentPreset_Max_NumberOf_EffectBlocks_DEFINE 24
 
 byte Axe_Fx_Type, Axe_Fx_Version, Axe_Fx_Sub_Version;
-int CP_Number_Effects;
-byte CP_Effect_ID [ CurentPreset_Max_NumberOf_EffectBlocks_DEFINE ];  //Current Preset list of all the Effect Blocks ID of the preset
+int CP_Number_Effect_Blocks;
+byte CP_Effect_Block_ID [ CurentPreset_Max_NumberOf_EffectBlocks_DEFINE ];  //Current Preset list of all the Effect Blocks ID of the preset
 byte CP_Effect_CC [ CurentPreset_Max_NumberOf_EffectBlocks_DEFINE ];
 boolean CP_Effect_OBState [ CurentPreset_Max_NumberOf_EffectBlocks_DEFINE ];
 boolean CP_Effect_XYState [ CurentPreset_Max_NumberOf_EffectBlocks_DEFINE ];
-byte CP_Effect_Type [ CurentPreset_Max_NumberOf_EffectBlocks_DEFINE ];
+byte CP_Effect_Type_ID [ CurentPreset_Max_NumberOf_EffectBlocks_DEFINE ];
 byte CP_Effect_BCR_Preset [ CurentPreset_Max_NumberOf_EffectBlocks_DEFINE ];
-boolean CP_Initial_Param_Value_received[ BCR2000_ENCODER_NUMBER + BCR2000_PUSH_BUT_NUMBER ];
+boolean CP_Initial_Param_Value_received[ BCR2000_NumberOf_Controls_DEFINE ];
 
 struct DYN_EffectType CurrentControlPage_EffectType;
+
+byte Stop_Resync = 0xFF ; // No AXE-FX function with value 0xFF possible due to MIDI standart
 
 
 
@@ -171,7 +174,7 @@ int CountReceivedParam = 0;
 
 
 ///////////////////////////////////////////////////////
-// TEST of the MIDI ports during the Test program --> to be improved !!!
+// TEST of the MIDI ports during the Test program --> TODO : to be improved !!!
 ///////////////////////////////////////////////////////
 byte FOOTPEDAL_Received_CC_Value = 0;
 byte AXEFX_Received_CC_Value = 0;
@@ -254,16 +257,10 @@ void setup()
   digitalWrite(UVGA_RESETPIN, LOW);
   
   // Way for the uVGA to be initialized --> Then it can receive display messages
-  delay(4000);
-
-
+  delay(6500);  
+  
   // Start the SoftwareSerial communication on pins
   sSerial.begin(115200);
-//  send_uvga_A( 0); //Display init screen
-//  send_uvga_2( "start" );
-//  send_uvga_1( );
-//  send_uvga_Z(4, 127, 1);
-
  
   //////////////////////////
   //  START MIDI 
@@ -312,13 +309,13 @@ void setup()
     sysex_mes[5]= 0x00;  // Version
     sysex_mes[6]= 0x00;  // sub version
     MIDI_AXE.sendSysEx( byte( 7 ), sysex_mes, false ); 
-    for( int k=0 ; k < 10000 ; k++) { MIDI_AXE.read(AXE_FX_CHANNEL); }
+    for( int k=0 ; k < 100 ; k++) { MIDI_AXE.read(AXE_FX_CHANNEL); }
 
     // SEND AXE-FX II specific version query SYSEX
     if(Axe_Fx_Type == 0xFF || Axe_Fx_Version == 0x00)
     {
       sysex_mes[3]= 0x03;  // AXE II - must be set to 3 to work
-      sysex_mes[4]= 0x08;  // ID od MIDI_GET_FIRMWARE_VERSION function
+      sysex_mes[4]= AXEFX_SYSEX_QUERY_VERSION;  //0x08   // ID od MIDI_GET_FIRMWARE_VERSION function
       sysex_mes[5]= 0x00;  // Version
       sysex_mes[6]= 0x00;  // sub version
       sysex_mes[7]= 0x00;
@@ -361,6 +358,8 @@ void setup()
   SPI.begin ();
   SPI.setClockDivider(SPI_CLOCK_DIV4);
   pinMode(CHIP_SELECT, OUTPUT);    // Set pin connected to SPI FLASH chip select as output  
+  
+  
   #ifdef ELECTRONIE_PROTO
     pinMode(HOLD, OUTPUT);           // Set pin connected to SPI HOLD chip select as output  
     pinMode(WRITE_PROTECT, OUTPUT);  // Set pin connected to SPI WRITE_PROTECT select as output  
@@ -382,22 +381,12 @@ void setup()
   ////////////////////////////////////////////////////////////////
   //if ( Axe_Fx_Version == 0x00) { test(); }      //&& Axe_Fx_Type == 0xFF )  
   
-  
-  
-  #if defined(IN_DEBUG_MODE)
-    Serial.println(); Serial.println();  
-    Serial.print(F("END OF SETUP"));Serial.println("");
-    Serial.print(F("RAM: freeMemory ")); Serial.println(freeMemory(), DEC);
-    Serial.flush(); 
-  #endif
-
-
   // Display on LCD : MidyAX by LeafONICs
   #if ( !defined(ELECTRONIE_PROTO)  || defined(LCD_PRESENT) )
     // Initializes the LCD display --- LiquidCrystal lcd(32, 30, 28, 26, 24, 22);
     lcd.begin(16, 2); // set up the LCD's number of columns and rows: 
     lcd.setCursor(0, 0);
-    lcd.print(F("The MidyAX"));
+    lcd.print(F(MIDYAX_VERSION));
     lcd.setCursor(0, 1);
     lcd.print(F("by LeafONICS"));
   #endif
@@ -405,20 +394,27 @@ void setup()
   ///////////////////////////////
   // GET EFFECT LIST AND STATE //
   ///////////////////////////////
-  delay(4000);  //TODO// Check if necessary
-  if ( Axe_Fx_Version != 0x00 )
-  {
+  Get_Effect_Block_List_and_OBState();
+
+  #if defined(IN_DEBUG_MODE)
+    Serial.println(); Serial.println();  
+    Serial.print(F("END OF SETUP"));Serial.println("");
+    Serial.print(F("RAM: freeMemory ")); Serial.println(freeMemory(), DEC);
+    Serial.flush(); 
+  #endif
+}
+
+
+void Get_Effect_Block_List_and_OBState( void )
+{
     //AXE-FX 2 specific
     sysex_mes[0]= 0x00;
     sysex_mes[1]= 0x01; // Manufacturer ID MSB - Fractal Audio Manufacturer ID Most Significant Byte
     sysex_mes[2]= 0x74; // Manufacturer ID LSB - Fractal Audio Manufacturer ID Least Significant Byte
     sysex_mes[3]= 0x03; // Model ID Byte - Specific byte assigned to the Fractal Audio product - AXE-FX II by default
-    sysex_mes[4]= 0x0E;  
+    sysex_mes[4]= AXEFX_SYSEX_QUERY_STATES;   // 0x0E  
     sysex_mes[5] = Calculate_CheckSum( sysex_mes, 5); 
-    if ( Axe_Fx_Type != 0x03 ) { MIDI_AXE.sendSysEx( byte(5), sysex_mes, false ); }
-    else { MIDI_AXE.sendSysEx( byte( 6 ), sysex_mes, false ); }
-  }
-
+    MIDI_AXE.sendSysEx( byte( 6 ), sysex_mes, false );
 }
 
 
@@ -436,7 +432,7 @@ void loop()
 
   if( typeDelay_typeEvent == true)
   {
-    if(  millis() - typeDelay_lastTime  > 1000 )
+    if(  millis() - typeDelay_lastTime  > 2000 )
     {
       if( typeDelay_lastType == CurrentControlPage_EffectType.ID)
       {
@@ -479,7 +475,7 @@ void  ManageSystemExclusiveMessage (byte *incoming_sysex, byte incoming_size)
   long ReceivedValue, ReceivedValue1, div;
   float ratio, ftempo1, ftempo2, DisplayValue;
   
-#ifdef DEBUG
+#ifdef DEBUG16
   Serial.print(F("incoming_size   ")); Serial.print(incoming_size, HEX); 
   
       Serial.print(F("      SYSEX : "));
@@ -496,13 +492,13 @@ void  ManageSystemExclusiveMessage (byte *incoming_sysex, byte incoming_size)
   {
     /////////////////////////////////////////
     // Message Type == SYSEX_STATUS_MSG
-    case 0x64 :
+    case AXEFX_SYSEX_STATUS_MSG :  //0x64
       //TODO// Process Status/error messages
       break;
       
     /////////////////////////////////////////
     // Message Type == SYSEX_QUERY_VERSION
-    case 0x08:
+    case AXEFX_SYSEX_QUERY_VERSION :  //0x08
       if (Axe_Fx_Version == 0x00)
       {
         Axe_Fx_Type = incoming_sysex[4];
@@ -513,65 +509,70 @@ void  ManageSystemExclusiveMessage (byte *incoming_sysex, byte incoming_size)
 
     ///////////////////////////////////////
     // Message Type == SYSEX_QUERY_STATES 
-    case 0x0E:
+    case AXEFX_SYSEX_QUERY_STATES : //0x0E
     {
+#ifdef DEBUG3
+      Serial.println(F("Start receiving parameter values "));
+      Serial.println(incoming_sysex[5], DEC);
+#endif
+
       if(incoming_size < 10) break;
       int pos = 6;
       int i = int(incoming_size) - pos;
       byte effect_LS, effect_MS, CC_LS, CC_MS;
-      
+
       // PROCESS THE CONTENT OF THE 0x0E SYSEX message
-      CP_Number_Effects = 0;
+      CP_Number_Effect_Blocks = 0;
       do {
         //Set CP OBState ans XYState
         if (incoming_sysex[pos] == 1 || incoming_sysex[pos] == 3)  // ON state if XY or NOT
         {
-          CP_Effect_OBState[CP_Number_Effects] = 1;
+          CP_Effect_OBState[CP_Number_Effect_Blocks] = 1;
         }
         else {
-          CP_Effect_OBState[CP_Number_Effects] = 0;
+          CP_Effect_OBState[CP_Number_Effect_Blocks] = 0;
         }
         if (incoming_sysex[pos] == 2 || incoming_sysex[pos] == 3)  // X always present even if no XY for that effect
         {
-          CP_Effect_XYState[CP_Number_Effects] = 1;   // Case X --> State 1
+          CP_Effect_XYState[CP_Number_Effect_Blocks] = 1;   // Case X --> State 1
         }
         else {
-          CP_Effect_XYState[CP_Number_Effects] = 0;
+          CP_Effect_XYState[CP_Number_Effect_Blocks] = 0;
         } 
         
         effect_LS = incoming_sysex[pos+3] >> 3;
         effect_MS = incoming_sysex[pos+4] << 4  & 0xff;  // & 0xff ??? to be removed ???
-        CP_Effect_ID[CP_Number_Effects] = effect_MS ^ effect_LS;
+        CP_Effect_Block_ID[CP_Number_Effect_Blocks] = effect_MS ^ effect_LS;
         
         ///// CP_Effect_CC never used
         CC_LS = incoming_sysex[pos+1] >> 1;
         CC_MS = (incoming_sysex[pos+2] & 1) << 6;
-        CP_Effect_CC[CP_Number_Effects] = int( CC_MS ^ CC_LS );
+        CP_Effect_CC[CP_Number_Effect_Blocks] = int( CC_MS ^ CC_LS );
         
-        CP_Number_Effects++;
+        CP_Number_Effect_Blocks++;
         i = i - 5;
         pos = pos + 5;
       } while (i - 1 > 0 );  // Last byte of incoming sysex not used
 
       // Retrieve EFFECT TYPE of each EFFECT BLOCK in the Current Preset (CP) from the MidyAX memory
-      for(int j=0;    j < CP_Number_Effects    ;j++)
+      for(int j=0;    j < CP_Number_Effect_Blocks    ;j++)
       {
-        for(int k=0;    k < MAX_NUMBER_EFFECTS    ;k++)
+        for(int k=0;    k < MAX_NUMBER_EFFECTS_BLOCK    ;k++)
         {
-          if ( CP_Effect_ID[j] == pgm_read_byte_near( PROGMEM_BYTE___AXEFX_Effect_ID + k ) )
+          if ( CP_Effect_Block_ID[j] == pgm_read_byte_near( PROGMEM_BYTE___AXEFX_Effect_Block_ID + k ) )
           {
-            CP_Effect_Type [j] = pgm_read_byte_near( PROGMEM_BYTE___AXEFX_Effect_Type + k );
+            CP_Effect_Type_ID[j] = pgm_read_byte_near( PROGMEM_BYTE___AXEFX_Effect_Block_to_Effect_Type_ID + k );
             break;
           }
         }
       }       
 
       // Retrieve the BCR preset associated to each effect from the MidyAX memory
-      for(int j=0;    j < CP_Number_Effects    ;j++)
+      for(int j=0;    j < CP_Number_Effect_Blocks    ;j++)
       {
         for(int k=0;    k <= BCR2000_Max_NumberOf_ControlPage_DEFINE    ; k++)
         {
-          if( ControlPages_USER_Mapping[k] == CP_Effect_Type [j])
+          if( ControlPages_USER_Mapping[k] == CP_Effect_Type_ID[j])
           {
             CP_Effect_BCR_Preset [j] = k;
             break;
@@ -581,24 +582,24 @@ void  ManageSystemExclusiveMessage (byte *incoming_sysex, byte incoming_size)
       
 #ifdef DEBUG3
       Serial.print(F("LIST OF EFFECTS: Total number = "));
-      Serial.print(CP_Number_Effects, DEC);
+      Serial.print(CP_Number_Effect_Blocks, DEC);
       Serial.println();
-      for (int j=0;    j < CP_Number_Effects    ;j++)
+      for (int j=0;    j < CP_Number_Effect_Blocks    ;j++)
       {
         Serial.print(F("EFFECT "));
         Serial.print(j, DEC);
-        Serial.print(F(":  ID = "));  Serial.print(CP_Effect_ID[j], HEX);
+        Serial.print(F(":  ID = "));  Serial.print(CP_Effect_Block_ID[j], HEX);
         Serial.print(F(":  CC="));  Serial.print(CP_Effect_CC[j], DEC);
         Serial.print(F(":  OBState = "));  Serial.print(CP_Effect_OBState[j], DEC);
         Serial.print(F(":  XYState = "));  Serial.print(CP_Effect_XYState[j], DEC);
-        Serial.print(F(":  Type = "));  Serial.print(CP_Effect_Type[j], DEC);
+        Serial.print(F(":  Type = "));  Serial.print(CP_Effect_Type_ID[j], DEC);
         Serial.println();
       }
       Serial.println();
 #endif
 
       CountReceivedParam = 0; // So that it counts up to CP_Number_Effects
-      for(int k=0;    k < BCR2000_ENCODER_NUMBER + BCR2000_PUSH_BUT_NUMBER    ;k++) { CP_Initial_Param_Value_received[i] = 0; }
+      for(int k=0; k < BCR2000_NumberOf_Controls_DEFINE ;k++) { CP_Initial_Param_Value_received[i] = 0; }
       
        
       ////////////////////////////////////////
@@ -610,7 +611,7 @@ void  ManageSystemExclusiveMessage (byte *incoming_sysex, byte incoming_size)
       //TODO// FOR NOW: the case where an AXE-FX has no effect is not treated
       
       // Identify the first effect that is on - if any
-      for (int j=0;    j < CP_Number_Effects    ;j++)
+      for (int j=0;    j < CP_Number_Effect_Blocks    ;j++)
       {
         // 3 --> X on, 1 --> Y on
         if( CP_Effect_OBState[j] == 1  || CP_Effect_OBState[j] == 3)
@@ -620,38 +621,43 @@ void  ManageSystemExclusiveMessage (byte *incoming_sysex, byte incoming_size)
         }
       }
 
-      // Set BCR preset and state of 16th push buttons
+      // Set BCR preset 
       Change_BCR2000_Preset( CP_Effect_BCR_Preset [ FirstOnIndex ] + 1 , true);
           
       // Set all push buttons to off apart from the one that has been set on
-      PB16_state = false;
-      for(i=1; i <= 16 ; i++)
+      SHIFT_PB__state = false;
+      for(i=1; i <= 15 ; i++)
       {
         // Set al the buttons to OFF
-        MIDI_BCR2000.sendControlChange( byte(40+i), byte(0), byte(1) );
+        MIDI_BCR2000.sendControlChange( byte(40+i), byte(MIDI_OFF), byte(BCR2000_MIDI_Channel) );
       }
       // SET the active button to ON
-      MIDI_BCR2000.sendControlChange( byte(41 + CP_Effect_BCR_Preset [ FirstOnIndex ] ), byte(127), byte(1) );
+      MIDI_BCR2000.sendControlChange( byte(41 + CP_Effect_BCR_Preset [ FirstOnIndex ] ), byte(MIDI_ON), byte(BCR2000_MIDI_Channel) );
       CS_BCR2000_ACTIVE_BUTTON = CP_Effect_BCR_Preset [ FirstOnIndex ] + 1;
 
-
       // ASK for the PRESET name
-      sysex_mes[4] = 0x0F;
+      sysex_mes[4] = AXEFX_SYSEX_QUERY_NAME;  // 0x0F
       sysex_mes[5] = Calculate_CheckSum( sysex_mes, 5);
       MIDI_AXE.sendSysEx( byte( 6 ), sysex_mes, false );
-      for( int k=0 ; k < 100 ; k++) 
+      for( int k=0 ; k < 1000 ; k++) 
       {
-        if( MIDI_AXE.read(AXE_FX_CHANNEL) == true) break;
+        if( MIDI_AXE.read(AXE_FX_CHANNEL) == true)
+        { 
+          #ifdef DEBUG13
+                Serial.print(F("CurentPreset_AXEFX_Preset_Name = "));
+                Serial.print( CurentPreset_AXEFX_Preset_Name );
+                Serial.println();
+         #endif       
+          break;
+        }
         delay(1);
-      }  ////// RISK of autocall
-
-
+      }
+      
       // After loading the Effects Chain description (LAYOUT)
+      send_uVGA_A___Current_Preset( ); // SENDs Current Preset infos  
       // starts loading parmeters for the first EFFECT BLOCK in the current preset
-      StartParamLoading( FirstOnIndex);
-      //StartParamLoading( FirstOnIndex); //TODO : REMOVE and imrpove Get_Send_Param_Values for first load !!
-      //Display_Control_Page();
-
+      SetLoad_CurrentControlPage( FirstOnIndex);
+      
     } // End that switch case !!!
     break;
    
@@ -660,11 +666,11 @@ void  ManageSystemExclusiveMessage (byte *incoming_sysex, byte incoming_size)
       
     // MIDI_SET_PARAMETER
     // Receives initial values of param after an effect (BCR2000 preset) change
-    case 0x02:   
+    case AXEFX_SYSEX_PARAM_SET :  //0x02   
 /* #ifdef DEBUG
           Serial.print("CS_Loaded   "); Serial.print(CS_Loaded, BIN); 
           Serial.print("  CountReceivedParam  "); Serial.print(CountReceivedParam, DEC);
-          Serial.print("  CS_Number_Active_Encoder   "); Serial.print(CS_Number_Active_Encoder, DEC); 
+          Serial.print("  CS_NumberOf_Active_Controls   "); Serial.print(CS_NumberOf_Active_Controls, DEC); 
           Serial.println("");Serial.println("");
 #endif   */
     
@@ -678,58 +684,58 @@ void  ManageSystemExclusiveMessage (byte *incoming_sysex, byte incoming_size)
           if( incoming_sysex[8] == byte(13) )
           { 
             if(incoming_sysex[10] == byte(1) ) 
-            { LOOPER_STATE_RECORD == true; MIDI_BCR2000.sendControlChange( byte(49), byte(127), byte(1) ); }
-            else { LOOPER_STATE_RECORD == false; MIDI_BCR2000.sendControlChange( byte(49), byte(0), byte(1) ); }
+            { LOOPER_STATE_RECORD == true; MIDI_BCR2000.sendControlChange( byte(49), byte(MIDI_ON), byte(BCR2000_MIDI_Channel) ); }
+            else { LOOPER_STATE_RECORD == false; MIDI_BCR2000.sendControlChange( byte(49), byte(MIDI_OFF), byte(BCR2000_MIDI_Channel) ); }
           }
           
           // PLAY
           if( incoming_sysex[8] == byte(14) )  
           { if(incoming_sysex[10] == byte(1) ) 
-            { LOOPER_STATE_PLAY == true; MIDI_BCR2000.sendControlChange( byte(50), byte(127), byte(1) );}
-            else { LOOPER_STATE_PLAY == false; MIDI_BCR2000.sendControlChange( byte(50), byte(0), byte(1) );} 
+            { LOOPER_STATE_PLAY == true; MIDI_BCR2000.sendControlChange( byte(50), byte(MIDI_ON), byte(BCR2000_MIDI_Channel) );}
+            else { LOOPER_STATE_PLAY == false; MIDI_BCR2000.sendControlChange( byte(50), byte(MIDI_OFF), byte(BCR2000_MIDI_Channel) );} 
           }
           
           // ONCE
           if( incoming_sysex[8] == byte(15) )
           {
             if(incoming_sysex[10] == byte(1) ) 
-            { LOOPER_STATE_ONCE == true; MIDI_BCR2000.sendControlChange( byte(51), byte(127), byte(1) );}
-            else { LOOPER_STATE_ONCE == false; MIDI_BCR2000.sendControlChange( byte(51), byte(0), byte(1) );}
+            { LOOPER_STATE_ONCE == true; MIDI_BCR2000.sendControlChange( byte(51), byte(MIDI_ON), byte(BCR2000_MIDI_Channel) );}
+            else { LOOPER_STATE_ONCE == false; MIDI_BCR2000.sendControlChange( byte(51), byte(MIDI_OFF), byte(BCR2000_MIDI_Channel) );}
           }
           
           // DUB
           if( incoming_sysex[8] == byte(16) )
           { if(incoming_sysex[10] == byte(1) ) 
-            { LOOPER_STATE_DUB == true; MIDI_BCR2000.sendControlChange( byte(52), byte(127), byte(1) );}
-            else { LOOPER_STATE_DUB == false; MIDI_BCR2000.sendControlChange( byte(52), byte(0), byte(1) );}
+            { LOOPER_STATE_DUB == true; MIDI_BCR2000.sendControlChange( byte(52), byte(MIDI_ON), byte(BCR2000_MIDI_Channel) );}
+            else { LOOPER_STATE_DUB == false; MIDI_BCR2000.sendControlChange( byte(52), byte(MIDI_OFF), byte(BCR2000_MIDI_Channel) );}
           }
           
           // REVERSE
           if( incoming_sysex[8] == byte(17) ) 
           { if(incoming_sysex[10] == byte(1) ) 
-            { LOOPER_STATE_REVERSE == true; MIDI_BCR2000.sendControlChange( byte(53), byte(127), byte(1) );}
-            else { LOOPER_STATE_REVERSE == false; MIDI_BCR2000.sendControlChange( byte(53), byte(0), byte(1) );}
+            { LOOPER_STATE_REVERSE == true; MIDI_BCR2000.sendControlChange( byte(53), byte(MIDI_ON), byte(BCR2000_MIDI_Channel) );}
+            else { LOOPER_STATE_REVERSE == false; MIDI_BCR2000.sendControlChange( byte(53), byte(MIDI_OFF), byte(BCR2000_MIDI_Channel) );}
           }
           
           // UNDO
           if( incoming_sysex[8] == byte(18) )  
           { if(incoming_sysex[10] == byte(1) ) 
-            { LOOPER_STATE_UNDO == true; MIDI_BCR2000.sendControlChange( byte(54), byte(127), byte(1) );} 
-            else { LOOPER_STATE_UNDO == false; MIDI_BCR2000.sendControlChange( byte(54), byte(0), byte(1) );}
+            { LOOPER_STATE_UNDO == true; MIDI_BCR2000.sendControlChange( byte(54), byte(MIDI_ON), byte(BCR2000_MIDI_Channel) );} 
+            else { LOOPER_STATE_UNDO == false; MIDI_BCR2000.sendControlChange( byte(54), byte(MIDI_OFF), byte(BCR2000_MIDI_Channel) );}
           }
           
           // HALF
           if( incoming_sysex[8] == byte(19) )
           { if(incoming_sysex[10] == byte(1) ) 
-            { LOOPER_STATE_HALF == true; MIDI_BCR2000.sendControlChange( byte(55), byte(127), byte(1) );} 
-            else { LOOPER_STATE_HALF == false; MIDI_BCR2000.sendControlChange( byte(55), byte(0), byte(1) );}
+            { LOOPER_STATE_HALF == true; MIDI_BCR2000.sendControlChange( byte(55), byte(MIDI_ON), byte(BCR2000_MIDI_Channel) );} 
+            else { LOOPER_STATE_HALF == false; MIDI_BCR2000.sendControlChange( byte(55), byte(MIDI_OFF), byte(BCR2000_MIDI_Channel) );}
           }
           
           // METRO
           if( incoming_sysex[8] == byte(20) )
           { if(incoming_sysex[10] == byte(1) ) 
-            { LOOPER_STATE_METRO == true; MIDI_BCR2000.sendControlChange( byte(56), byte(127), byte(1) );} 
-            else { LOOPER_STATE_METRO == false; MIDI_BCR2000.sendControlChange( byte(56), byte(0), byte(1) );} 
+            { LOOPER_STATE_METRO == true; MIDI_BCR2000.sendControlChange( byte(56), byte(MIDI_ON), byte(BCR2000_MIDI_Channel) );} 
+            else { LOOPER_STATE_METRO == false; MIDI_BCR2000.sendControlChange( byte(56), byte(MIDI_OFF), byte(BCR2000_MIDI_Channel) );} 
           }
           
           // No CC for these 2 for now
@@ -743,24 +749,62 @@ void  ManageSystemExclusiveMessage (byte *incoming_sysex, byte incoming_size)
         }
         return;
       }*/
-        
-      if( CS_Loaded == false && CountReceivedParam < CS_Number_Active_Encoder )
+      
+      #ifdef DEBUG16
+          Serial.print(F("CS_Loaded = ")); Serial.print(  CS_Loaded, DEC);
+          Serial.print(F("   CountReceivedParam = ")); Serial.print( CountReceivedParam, DEC);
+          Serial.print(F("   CS_NumberOf_Active_Controls = ")); Serial.print( CS_NumberOf_Active_Controls, DEC);
+          Serial.println();
+      #endif      
+      
+      // Load and counts received parameters for a Control Page or QucickAccess Page if they have not all been received   
+      if( CS_Loaded == false && CountReceivedParam < CS_NumberOf_Active_Controls )
       {
-        for(int i=0;    i < BCR2000_ENCODER_NUMBER + BCR2000_PUSH_BUT_NUMBER    ;i++)
+      	int addr;
+      	byte Current_Param_ID, Current_Effect_BLock_ID, Current_Effect_Type_ID;
+        struct DYN_Parameter THE_Parameter;  
+        
+        // Check if the received value matches a parameter on the Current Control page or QucickAccess Page
+        for(int i=0;    i < BCR2000_NumberOf_Controls_DEFINE    ;i++)
         {
-          if( CP_Initial_Param_Value_received[i] == 0)
+          // Process if the Received value is different than O // TODO : Check if not problem if received value of a parameter was 0
+        #ifdef DEBUG16
+            Serial.print(F("i = ")); Serial.print(  i, DEC);
+            Serial.print(F("   CP_Initial_Param_Value_received[i] = ")); Serial.print( CP_Initial_Param_Value_received[i], DEC);
+            Serial.println();
+        #endif
+        if( CP_Initial_Param_Value_received[i] == 0)
           { 
-            byte CS_Effect_Type_used = CS_Effect_Type-2;
-            struct DYN_Parameter THE_Parameter;
+	    if ( QUICKACCESS_STATE == 0 )
+            {
+              addr = CS_Preset_Number * BCR2000_NumberOf_Controls_DEFINE + i;
+              Current_Param_ID = EEPROM.read(addr);
+              Current_Effect_BLock_ID = CS_Effect_Block_ID;
+              Current_Effect_Type_ID = CS_Effect_Type_ID;
+            }
+            else {
+              addr = EEPROM_START_QUICKACCESS_PAGE + ( (QUICKACCESS_STATE-1) * BCR2000_NumberOf_Controls_DEFINE + i ) * 2;
+	      Current_Param_ID = EEPROM.read(addr);
+	      addr ++;
+              // Get the Effect Block ID  
+	      Current_Effect_BLock_ID = EEPROM.read(addr);
+              // Get the Effect Type ID of the Effect Block
+	      Current_Effect_Type_ID = pgm_read_byte_near( PROGMEM_BYTE___AXEFX_Effect_Block_to_Effect_Type_ID_NEW + (Current_Effect_BLock_ID - 100) );
+ 	    }
+            Read_Parameter_FromFLASH( Current_Effect_Type_ID -2, Current_Param_ID, &THE_Parameter );
 
-            int addr = CS_Preset_Number * (BCR2000_ENCODER_NUMBER + BCR2000_PUSH_BUT_NUMBER) + i;
-            byte Btempo = EEPROM.read(addr);
-            Read_Parameter_FromFLASH( (byte) CS_Effect_Type_used, Btempo, &THE_Parameter ); 
+            #ifdef DEBUG16
+                Serial.print(F(" incoming_sysex[7] = ")); Serial.print(  incoming_sysex[7], HEX);
+                Serial.print(F(" incoming_sysex[6] = ")); Serial.print( incoming_sysex[6], HEX);
+                
+                Serial.print(F(" CS_NumberOf_Active_Controls = ")); Serial.print( CS_NumberOf_Active_Controls, DEC);
+                Serial.print(F(" CountReceivedParam = ")); Serial.print( CountReceivedParam, DEC);
+                Serial.println();
+            #endif
             
-       
             if( incoming_sysex[7] == 0x01 ) { incoming_sysex[6] = incoming_sysex[6] + 0x80;}  // TO BE IMPROVED !!!
 
-            if( incoming_sysex[6] == CS_Effect_ID  && incoming_sysex[8] == Btempo && Axe_Fx_Type == 0x03)
+            if( incoming_sysex[6] == Current_Effect_BLock_ID  && incoming_sysex[8] == Current_Param_ID )
             {
               CP_Initial_Param_Value_received[i] = 1;
                
@@ -774,7 +818,13 @@ void  ManageSystemExclusiveMessage (byte *incoming_sysex, byte incoming_size)
                 ftempo2 = THE_Parameter.numVals;
                 ratio = ftempo1 / ftempo2;
                 ReceivedValue = ratio * 127;
-                DisplayValue = THE_Parameter.minDispValue + (THE_Parameter.maxDispValue - THE_Parameter.minDispValue) * (ratio);
+                
+                byte factor = 1;
+                if( THE_Parameter.unit == 5 && THE_Parameter.maxDispValue == 1) {factor = 100;}  // percentage
+                else { 
+                  if (THE_Parameter.maxDispValue == 1 ) {factor = 10;}
+                }   
+                DisplayValue = THE_Parameter.minDispValue + ( (THE_Parameter.maxDispValue * factor) - THE_Parameter.minDispValue) * (ratio);
               }
               else {
                 ReceivedValue = incoming_sysex[10];
@@ -785,10 +835,10 @@ void  ManageSystemExclusiveMessage (byte *incoming_sysex, byte incoming_size)
             if (CP_Initial_Param_Value_received[i] == 1 )
             {          
               // Send initial param value to BCR2000
-              MIDI_BCR2000.sendControlChange( byte( pgm_read_byte_near( PROGMEM_BYTE___BCR2000_Encoder_CC_Mapping + i) ), byte(ReceivedValue), byte(1) );
-              send_uvga_D( i, ReceivedValue, DisplayValue );
+              MIDI_BCR2000.sendControlChange( byte( pgm_read_byte_near( PROGMEM_BYTE___BCR2000_Encoder_CC_Mapping + i) ), byte(ReceivedValue), byte(BCR2000_MIDI_Channel) );
+              send_uVGA_D___Init_Value( i, ReceivedValue, DisplayValue );
               
-#ifdef DEBUG2
+#ifdef DEBUG16
                 Serial.print(F("i = ")); Serial.print( i, DEC);
                 Serial.print(F(" THE_Parameter.label = ")); Serial.print( THE_Parameter.label);
                 Serial.print(F(" THE_Parameter.numVals = ")); Serial.print( THE_Parameter.numVals, DEC);
@@ -801,14 +851,14 @@ void  ManageSystemExclusiveMessage (byte *incoming_sysex, byte incoming_size)
 #endif
               
               CountReceivedParam++;
-#ifdef DEBUG
+#ifdef DEBUG16
               // PRINT OUT AXE-FX initial values              Serial.print("INIT VALUE for Control "); Serial.print(i,DEC);
-/*              Serial.print("flash_index = "); Serial.print(flash_index, HEX);
-              Serial.print("   i = "); Serial.print(i, DEC);
-              Serial.print("   tempo = "); Serial.print(tempo, DEC);
-              Serial.print("   flash_index + i = "); Serial.print(int(flash_index + i), DEC);
-              Serial.print(" ;in HEX =  "); Serial.print(byte( tempo ), HEX);
-              Serial.println();*/
+//              Serial.print("flash_index = "); Serial.print(flash_index, HEX);
+//              Serial.print("   i = "); Serial.print(i, DEC);
+//              Serial.print("   tempo = "); Serial.print(tempo, DEC);
+//              Serial.print("   flash_index + i = "); Serial.print(int(flash_index + i), DEC);
+//              Serial.print(" ;in HEX =  "); Serial.print(byte( tempo ), HEX);
+//              Serial.println();
               Serial.print(F("INIT VALUE for Control ")); Serial.print(i,DEC);
               Serial.print(F(" :   HB = ")); Serial.print(incoming_sysex[12], HEX);
               Serial.print(F("  MB = ")); Serial.print(incoming_sysex[11], HEX);
@@ -819,7 +869,7 @@ void  ManageSystemExclusiveMessage (byte *incoming_sysex, byte incoming_size)
               Serial.print(F("  ReceivedValue= ")); Serial.print( ReceivedValue1, DEC);
               Serial.print(F("  Ratio= ")); Serial.print( ratio, 8);
               Serial.print(F("  CC_VALUE= ")); Serial.print( ReceivedValue, DEC);
-              Serial.println(); Serial.println(); //line feed
+              Serial.println(); Serial.println(); Serial.println(); //line feed
 #endif
               break;
             }
@@ -836,31 +886,31 @@ void  ManageSystemExclusiveMessage (byte *incoming_sysex, byte incoming_size)
 
 #ifdef DEBUG
       Serial.print(F("  CS_Loaded = ")); Serial.print( CS_Loaded, BIN);
-      Serial.print(F("  CS_Number_Active_Encoder = ")); Serial.print( CS_Number_Active_Encoder, DEC);
+      Serial.print(F("  CS_NumberOf_Active_Controls = ")); Serial.print( CS_NumberOf_Active_Controls, DEC);
       Serial.print(F("  CountReceivedParam = ")); Serial.print( CountReceivedParam, DEC);
       Serial.println(); //line feed
 #endif
 
       //Tets if all the initial param value of the newly choosen effect have been received      
-      if( CountReceivedParam == CS_Number_Active_Encoder && CS_Loaded == false) 
+      if( CountReceivedParam == CS_NumberOf_Active_Controls && CS_Loaded == false) 
       {
-        CS_Loaded = true;
-        //send_uVGA_D( 41 , 41, 41 );    
+        CS_Loaded = true;    
       } 
 #ifdef DEBUG4
       else {
         Serial.print(F("CountReceivedParam = ")); Serial.print(CountReceivedParam, DEC); Serial.println(); 
       }
 #endif
-      break;
+    break;
 
+    // TODO : Check if neeeded 
     // Change of SCENE has occured on the AXE-FX 
-    case 0x29:
+    case AXEFX_SYSEX_SET_SCENE :  //0x29
         CurentPreset_CurrentSCENE_Number = incoming_sysex[6];
     break;
 
     // Reception of the name of the current preset on the AXE-FX (after querying it)
-    case 0x0F:
+    case AXEFX_SYSEX_QUERY_NAME :  //0x0F
         for(int i = 6; i < 38; i++)
         {
           CurentPreset_AXEFX_Preset_Name[i-6] =  incoming_sysex[i];
@@ -868,8 +918,9 @@ void  ManageSystemExclusiveMessage (byte *incoming_sysex, byte incoming_size)
         //Serial.println( CurentPreset_AXEFX_Preset_Name );
     break;
     
-    //  A Change of current PRESET has occured on the AXE-FX
-    case 0x14:
+    // A Change of current PRESET has occured on the AXE-FX
+    // Can do without since a RESYNC message is send on preset change on the AXE-FX
+    /*case AXEFX_SYSEX_PATCHNUM :  //0x14
         //TODO// Store preset number
         //  =  incoming_sysex[6];
         // Start of parameter loading from the AXE-FX             
@@ -877,13 +928,31 @@ void  ManageSystemExclusiveMessage (byte *incoming_sysex, byte incoming_size)
         sysex_mes[1]= 0x01; // Manufacturer ID MSB - Fractal Audio Manufacturer ID Most Significant Byte
         sysex_mes[2]= 0x74;
         sysex_mes[3] = 0x03;  //MODEL 3 // AXE-FX II specific
-        sysex_mes[4]= 0x0E;  // SYSEX Function = Query state of current preset
+        sysex_mes[4]= AXEFX_SYSEX_QUERY_STATES;  // 0x0E   // SYSEX Function = Query state of current preset
         sysex_mes[5] = Calculate_CheckSum( sysex_mes, 5); 
         MIDI_AXE.sendSysEx( byte( 6 ), sysex_mes, false );
+    break; */
+    
+    // RESYNC message sent by the AXE-FX
+    case AXEFX_SYSEX_RESYNC :  //0x21
+      if( Stop_Resync == 0xFF )
+        sysex_mes[4]= AXEFX_SYSEX_QUERY_STATES;  //0x0E  // SYSEX Function = Query state of current preset
+        sysex_mes[5] = Calculate_CheckSum( sysex_mes, 5); 
+        MIDI_AXE.sendSysEx( byte( 6 ), sysex_mes, false );
+        // SetLoad_CurrentControlPage( CS_Current_Effect_Number_In_CP );        
+#ifdef DEBUG3
+      Serial.println(F("AXEFX_SYSEX_RESYNC message received"));
+#endif     
+       Stop_Resync = 0xFF;
     break; 
     
-    
-     
+    // Send by AXE-FX when the preset is changed on the AXE-FX
+    case AXEFX_SYSEX_PATCHNUM :  //0x14
+      Get_Effect_Block_List_and_OBState();
+      Stop_Resync = AXEFX_SYSEX_PATCHNUM;
+#ifdef DEBUG3
+      Serial.println(F("AXEFX_SYSEX_PATCHNUM message received"));
+#endif     
     default:
     break; 
   }  //END switch
@@ -895,24 +964,60 @@ void  ManageSystemExclusiveMessage (byte *incoming_sysex, byte incoming_size)
 
 
 
-void Get_Send_Param_Values( void )
+void Get_Send_Param_Values( )
 {
   int addr;
-  byte Current_Param_ID, Btempo;
+  byte Current_Effect_Block_ID, Current_Param_ID, Btempo;
+  boolean found_Effect_Block_in_CP;
   
-  CS_Number_Active_Encoder = 0;
+  CS_NumberOf_Active_Controls = 0; //GLOBAL VAR
 
   //Counts the number of param queries to be send and received
-  for( int j=0;  j < BCR2000_ENCODER_NUMBER + BCR2000_PUSH_BUT_NUMBER; j++)
+  for( int j=0;  j < BCR2000_NumberOf_Controls_DEFINE; j++)
   { 
-    addr = CS_Preset_Number * (BCR2000_ENCODER_NUMBER + BCR2000_PUSH_BUT_NUMBER) + j;
-    Btempo = EEPROM.read(addr);
-    if (Btempo != 0xFE)
+    if ( QUICKACCESS_STATE == 0 )
     {
-      CS_Number_Active_Encoder++;
+      addr = CS_Preset_Number * BCR2000_NumberOf_Controls_DEFINE + j;
     }
+    else {
+      addr = EEPROM_START_QUICKACCESS_PAGE + ( (QUICKACCESS_STATE-1) * BCR2000_NumberOf_Controls_DEFINE + j ) * 2;
+    }
+    Current_Param_ID = EEPROM.read( addr );
+    Current_Effect_Block_ID = EEPROM.read( addr + 1 );
+
+    
+    // For QA pages determine if the effect block of the param is in the Curren Preset (CP)
+    if ( QUICKACCESS_STATE != 0 )
+    {
+      found_Effect_Block_in_CP = false;
+      for( int k=0;  k < CP_Number_Effect_Blocks; k++)
+      {
+#ifdef DEBUG16
+      Serial.print(F("Current_Param_ID = ")); Serial.print( Current_Param_ID, DEC);
+      Serial.print(F("   Current_Effect_Block_ID = ")); Serial.print( Current_Effect_Block_ID, DEC);
+      Serial.print(F("   CP_Effect_Block_ID[k] = ")); Serial.print( CP_Effect_Block_ID[k], DEC);
+      Serial.println(); //line feed
+#endif
+        if( CP_Effect_Block_ID[k] == Current_Effect_Block_ID )
+        {
+          found_Effect_Block_in_CP = true;
+          break;
+        }
+      }
+    } else { found_Effect_Block_in_CP = true; }  
+      
+    if( Current_Param_ID != 0xFE && found_Effect_Block_in_CP )
+    {
+      CS_NumberOf_Active_Controls++;
+    }        
   }
-  
+  #ifdef DEBUG15
+    Serial.print(F("CS_NumberOf_Active_Controls = ")); Serial.print(CS_NumberOf_Active_Controls, DEC);
+    Serial.print(F("    QUICKACCESS_STATE = ")); Serial.println(QUICKACCESS_STATE, DEC);
+    Serial.println();
+  #endif
+
+   
   
   /////////
   ////////
@@ -922,60 +1027,77 @@ void Get_Send_Param_Values( void )
   
   
   //Iterate on all the encoder and push buttons of the current BCR2000 preset. Ask for Current Parameter Values 
-  for( int j=0;  j < BCR2000_ENCODER_NUMBER + BCR2000_PUSH_BUT_NUMBER; j++)
+  for( int j=0;  j < BCR2000_NumberOf_Controls_DEFINE; j++)
   {
     //Btempo = byte(pgm_read_byte_near( BCR2000_Preset_Encoder_Mapping + (CS_Preset_Number * (BCR2000_ENCODER_NUMBER + BCR2000_PUSH_BUT_NUMBER)) + j ) ); 
-    addr = CS_Preset_Number * (BCR2000_ENCODER_NUMBER + BCR2000_PUSH_BUT_NUMBER) + j;
-    Btempo = EEPROM.read(addr);
-    //Btempo = pgm_read_byte_near( &( BCR2000_Preset_Encoder_Mapping[ CS_Preset_Number ][ j ] ) );
-#ifdef DEBUG
-            int Itempo = (CS_Preset_Number * (BCR2000_ENCODER_NUMBER + BCR2000_PUSH_BUT_NUMBER)) + j;
-            Serial.print(F("PROGMEM ACCESS: CS_Preset_Number = ")); Serial.print( CS_Preset_Number, DEC);
-            Serial.print(F(",  j =")); Serial.print( j, DEC);
-            Serial.print(F(",  Itempo =")); Serial.print( Itempo, DEC);
-            Serial.print(F(",  Btempo =")); Serial.print( Btempo, HEX);
-            Serial.println(F(";"));
-#endif
-    //Current_Param_ID = BCR2000_Preset_Encoder_Mapping[ CS_Preset_Number ][ j ];
-    Current_Param_ID = Btempo;
-#ifdef DEBUG
-    Serial.print(F("CS Preset Number = ")); Serial.print(CS_Preset_Number, DEC);
-    Serial.print(F("  j = ")); Serial.print(j, DEC);
-    Serial.print(F("   Current_Param_ID = ")); Serial.print(Current_Param_ID, HEX);
-    Serial.println();
-#endif        
-    if (Current_Param_ID != 0xFE)
+    if ( QUICKACCESS_STATE == 0 )
     {
-        
-      if ( Axe_Fx_Type != 0x03 ) 
+	    addr = CS_Preset_Number * BCR2000_NumberOf_Controls_DEFINE + j;
+	    Current_Param_ID = EEPROM.read(addr);
+	    //Btempo = pgm_read_byte_near( &( BCR2000_Preset_Encoder_Mapping[ CS_Preset_Number ][ j ] ) );
+	#ifdef DEBUG155
+	            int Itempo = (CS_Preset_Number * BCR2000_NumberOf_Controls_DEFINE) + j;
+	            Serial.print(F("PROGMEM ACCESS: CS_Preset_Number = ")); Serial.print( CS_Preset_Number, DEC);
+	            Serial.print(F(",  j =")); Serial.print( j, DEC);
+	            Serial.print(F(",  Itempo =")); Serial.print( Itempo, DEC);
+	            Serial.print(F(",  Btempo =")); Serial.print( Btempo, HEX);
+	            Serial.println(F(";"));
+	#endif
+	    //Current_Param_ID = BCR2000_Preset_Encoder_Mapping[ CS_Preset_Number ][ j ];
+	    Current_Effect_Block_ID = CS_Effect_Block_ID;        
+    }
+    else {
+	    addr = EEPROM_START_QUICKACCESS_PAGE + ( (QUICKACCESS_STATE-1) * BCR2000_NumberOf_Controls_DEFINE + j ) * 2;
+	    Current_Param_ID = EEPROM.read(addr);
+	    addr ++;
+	    Current_Effect_Block_ID = EEPROM.read(addr);	
+    } 
+    
+    #ifdef DEBUG15
+      Serial.print(F("CS Preset Number = ")); Serial.print(CS_Preset_Number, DEC);
+      Serial.print(F("  j = ")); Serial.print(j, DEC);
+      Serial.print(F("   Current_Effect_Block_ID = ")); Serial.print(Current_Effect_Block_ID, HEX);
+      Serial.print(F("   Current_Param_ID = ")); Serial.print(Current_Param_ID, HEX);
+      Serial.println();
+    #endif    
+
+    // For QA pages determine if the effect block of the param is in the Curren Preset (CP)
+    if ( QUICKACCESS_STATE != 0 )
+    {
+      found_Effect_Block_in_CP = false;
+      for( int k=0;  k < CP_Number_Effect_Blocks; k++)
       {
-        // AXE-FX STANDARD or ULTRA
-        MIDI_AXE.sendSysEx( byte(SIZE_OF_SISEX_FOR_PARAM), sysex_mes, false ); 
+        if( CP_Effect_Block_ID[k] == Current_Effect_Block_ID )
+        {
+          found_Effect_Block_in_CP = true;
+          break;
+        }
+      }
+    } else { found_Effect_Block_in_CP = true; } 
+
+    if (Current_Param_ID != 0xFE && found_Effect_Block_in_CP)
+    {
+      sysex_mes[3] = 0x03;  //MODEL 3 // AXE-FX II
+      sysex_mes[4] = AXEFX_SYSEX_PARAM_SET;  // 0x02  // Function ID
+      if ( Current_Effect_Block_ID < 0x80 )
+      {
+        sysex_mes[5] = Current_Effect_Block_ID;
+        sysex_mes[6] = 0x00;
       }
       else {
-        // AXE-FX II
-        sysex_mes[3] = 0x03;  //MODEL 3
-        sysex_mes[4] = 0x02;  // Function ID
-        if ( CS_Effect_ID < 0x80 )
-        {
-          sysex_mes[5] = CS_Effect_ID;
-          sysex_mes[6] = 0x00;
-        }
-        else {
-          sysex_mes[5] = CS_Effect_ID - 0x80;
-          sysex_mes[6] = 0x01;
-        }          
-        sysex_mes[7] = Current_Param_ID;
-        sysex_mes[8] = 0x00;
-        sysex_mes[9] = 0x00;
-        sysex_mes[10] = 0x00;
-        sysex_mes[11] = 0x00;
-        sysex_mes[12] = 0x00;  // 0xdd query(0) or set(1) value
-        sysex_mes[13] = Calculate_CheckSum( sysex_mes, 13);
-        MIDI_AXE.sendSysEx( byte( SIZE_OF_SISEX_FOR_PARAM + 2 ), sysex_mes, false );
-      }
+        sysex_mes[5] = Current_Effect_Block_ID - 0x80;
+        sysex_mes[6] = 0x01;
+      }          
+      sysex_mes[7] = Current_Param_ID;
+      sysex_mes[8] = 0x00;
+      sysex_mes[9] = 0x00;
+      sysex_mes[10] = 0x00;
+      sysex_mes[11] = 0x00;
+      sysex_mes[12] = 0x00;  // 0xdd query(0) or set(1) value
+      sysex_mes[13] = Calculate_CheckSum( sysex_mes, 13);
+      MIDI_AXE.sendSysEx( byte( SIZE_OF_SISEX_FOR_PARAM + 2 ), sysex_mes, false );
 
-      #ifdef DEBUG
+      #ifdef DEBUG15
         Serial.print(j, DEC);
         Serial.print(F(" PARAM QUERY SENT: "));
         for (int k=0 ; k< SIZE_OF_SISEX_FOR_PARAM + 2 ; k++)
@@ -986,11 +1108,22 @@ void Get_Send_Param_Values( void )
         Serial.println();
         Serial.println();
       #endif   
+      
       for( int k=0 ; k < 100 ; k++) 
       {
-        if( MIDI_AXE.read(AXE_FX_CHANNEL) == true) break;
+        if( MIDI_AXE.read(AXE_FX_CHANNEL) == true)
+        {
+          #ifdef DEBUG12
+            Serial.print(F("j = "));
+            Serial.print(j, DEC);
+            Serial.print(F("    message received avec iteration k = "));
+            Serial.print(k, DEC);
+            Serial.println();            
+          #endif
+          break;
+        }
         delay(1);
-      }  ////// RISK of autocall
+      } 
     }  // END of IF testing Current_Param != 0xFE
   }  // END OF FOR iterating to BCR2000_ENCODER_NUMBER + BCR2000_PUSH_BUT_NUMBER
   
@@ -1046,19 +1179,31 @@ void AXE_ManageCC ( byte CC_channel, byte CC_number, byte CC_value )
 
 
 
-void StartParamLoading( byte Target_CP_Effect_Number )
+void SetLoad_CurrentControlPage( byte Target_CP_Effect_Number )
 {
+
+      //Reset CUSTOMIZE STATE if it was on
+      if (CUSTOMIZE_STATE == true) 
+      {
+       	CUSTOMIZE_STATE = false;  
+      	MIDI_BCR2000.sendControlChange( byte(BCR2000_CUSTOMIZE_CC_DEFINE), byte(MIDI_OFF), byte(BCR2000_MIDI_Channel) );
+        // Only when CUSTOMIZE_STATE goes from TRUE to FALSE
+        BCR2000_Init_Device( CS_Current_Effect_Number_In_CP + 1, CS_Current_Effect_Number_In_CP + 1);
+        Serial2.flush();
+        Serial2.end();
+        MIDI_BCR2000.begin( BCR2000_MIDI_CHANNEL );
+      }
+ 
   
-  
-      CS_Effect_ID = CP_Effect_ID[ Target_CP_Effect_Number ];
-      CS_Effect_Type = CP_Effect_Type [ Target_CP_Effect_Number ];
+      CS_Effect_Block_ID = CP_Effect_Block_ID[ Target_CP_Effect_Number ];
+      CS_Effect_Type_ID = CP_Effect_Type_ID[ Target_CP_Effect_Number ];
       CS_Preset_Number = CP_Effect_BCR_Preset [ Target_CP_Effect_Number ];
 //TODO :  CS_Preset_Number = Target_CP_Effect_Number ;
       CS_Effect_OBState = CP_Effect_OBState [ Target_CP_Effect_Number ];
       CS_Effect_XYState = CP_Effect_XYState [ Target_CP_Effect_Number ];
       CS_Current_Effect_Number_In_CP =  Target_CP_Effect_Number;
 
-      Read_EffectType_FromFLASH( CS_Effect_Type-2, &CurrentControlPage_EffectType);
+      Read_EffectType_FromFLASH( CS_Effect_Type_ID - 2 , &CurrentControlPage_EffectType);
 
 
       /////////////////////////////////////////////////////////////////////////////////////
@@ -1085,27 +1230,27 @@ void StartParamLoading( byte Target_CP_Effect_Number )
       ///////////  INITIALISE  CS_Effect_NumSel_State ///////////
       ///////////////////////////////////////////////////////////
 
-      switch ( pgm_read_byte_near( PROGMEM_BYTE___AXEFX_Effect_Type_Number + CS_Effect_Type ) )
+      switch ( pgm_read_byte_near( PROGMEM_BYTE___AXEFX_Effect_Type_Number + CS_Effect_Type_ID ) )
       {
         case 1:
           CS_Effect_NumSel_State = 0;
           break;
           
         case 2:
-          for( int k=0;    k < MAX_NUMBER_EFFECTS    ;k++)
+          for( int k=0;    k < MAX_NUMBER_EFFECTS_BLOCK    ;k++)
           {
 #ifdef DEBUG
-            Serial.print(F("CS_Effect_Type = ")); Serial.print(CS_Effect_Type, DEC);
-            Serial.print(F("  CS_Effect_ID = ")); Serial.print(CS_Effect_ID, DEC);
+            Serial.print(F("CS_Effect_Type_ID = ")); Serial.print(CS_Effect_Type_ID, DEC);
+            Serial.print(F("  CS_Effect_Block_ID = ")); Serial.print(CS_Effect_Block_ID, DEC);
             Serial.print(F("  k")); Serial.print(k, DEC);
-            Serial.print(F("   AXEFX_Effect_Type[ k ] = ")); Serial.print( pgm_read_byte_near( PROGMEM_BYTE___AXEFX_Effect_Type + k ) , DEC);           
-            Serial.print(F("   AXEFX_Effect_ID[k] = ")); Serial.print( pgm_read_byte_near( PROGMEM_BYTE___AXEFX_Effect_ID + k), DEC);
+            Serial.print(F("   AXEFX_Effect_Type[ k ] = ")); Serial.print( pgm_read_byte_near( PROGMEM_BYTE___AXEFX_Effect_Block_to_Effect_Type_ID + k ) , DEC);           
+            Serial.print(F("   AXEFX_Effect_ID[k] = ")); Serial.print( pgm_read_byte_near( PROGMEM_BYTE___AXEFX_Effect_Block_ID + k), DEC);
             Serial.println();
 #endif 
-            if ( CS_Effect_Type == pgm_read_byte_near( PROGMEM_BYTE___AXEFX_Effect_Type + k ) )
+            if ( CS_Effect_Type_ID == pgm_read_byte_near( PROGMEM_BYTE___AXEFX_Effect_Block_to_Effect_Type_ID + k ) )
             {             
-              if ( CS_Effect_ID == pgm_read_byte_near( PROGMEM_BYTE___AXEFX_Effect_ID + k )
-                  && CS_Effect_Type == pgm_read_byte_near( PROGMEM_BYTE___AXEFX_Effect_Type + (k+1) ) )
+              if ( CS_Effect_Block_ID == pgm_read_byte_near( PROGMEM_BYTE___AXEFX_Effect_Block_ID + k )
+                  && CS_Effect_Type_ID == pgm_read_byte_near( PROGMEM_BYTE___AXEFX_Effect_Block_to_Effect_Type_ID + (k+1) ) )
               {
                 // CASE 1 (displayed as 0)
                 CS_Effect_NumSel_State = 0;
@@ -1120,26 +1265,26 @@ void StartParamLoading( byte Target_CP_Effect_Number )
           break;
           
         case 4:
-          for( int k=0;    k < MAX_NUMBER_EFFECTS    ;k++)
+          for( int k=0;    k < MAX_NUMBER_EFFECTS_BLOCK    ;k++)
           {
-            if( CS_Effect_Type == pgm_read_byte_near( PROGMEM_BYTE___AXEFX_Effect_Type + k ) )
+            if( CS_Effect_Type_ID == pgm_read_byte_near( PROGMEM_BYTE___AXEFX_Effect_Block_to_Effect_Type_ID + k ) )
             {
-              if( CS_Effect_ID == pgm_read_byte_near( PROGMEM_BYTE___AXEFX_Effect_ID + k ) )
+              if( CS_Effect_Block_ID == pgm_read_byte_near( PROGMEM_BYTE___AXEFX_Effect_Block_ID + k ) )
               {
                 // CASE 1 (displayed as 0)
                 CS_Effect_NumSel_State = 0;
               }
-              if( CS_Effect_ID == pgm_read_byte_near( PROGMEM_BYTE___AXEFX_Effect_ID + (k+1) ) )
+              if( CS_Effect_Block_ID == pgm_read_byte_near( PROGMEM_BYTE___AXEFX_Effect_Block_ID + (k+1) ) )
               {
                 // CASE 2 (displayed as 1)
                 CS_Effect_NumSel_State = 1;
               }
-              if( CS_Effect_ID == pgm_read_byte_near( PROGMEM_BYTE___AXEFX_Effect_ID + (k+2) ) )
+              if( CS_Effect_Block_ID == pgm_read_byte_near( PROGMEM_BYTE___AXEFX_Effect_Block_ID + (k+2) ) )
               {
                 // CASE 3 (displayed as 2)
                 CS_Effect_NumSel_State = 2;
               }
-              if( CS_Effect_ID == pgm_read_byte_near( PROGMEM_BYTE___AXEFX_Effect_ID + (k+3) ) )
+              if( CS_Effect_Block_ID == pgm_read_byte_near( PROGMEM_BYTE___AXEFX_Effect_Block_ID + (k+3) ) )
               {
                 // CASE 4 (displayed as 3)
                 CS_Effect_NumSel_State = 3;
@@ -1152,31 +1297,25 @@ void StartParamLoading( byte Target_CP_Effect_Number )
         default:
           break; 
       }  // ENDofSWITCH
-
                   
   //ASK for the param value of the CS_Preset
   CS_Loaded = false;
   CountReceivedParam = 0;
-  for( int k=0;    k < BCR2000_ENCODER_NUMBER + BCR2000_PUSH_BUT_NUMBER    ;k++) { CP_Initial_Param_Value_received[k] = 0; }
-/*#ifdef DEBUG
-  Serial.println("///////////////////////////////////////////////////////////////");
-  Serial.print("CS_Effect_ID: "); Serial.print(CS_Effect_ID, HEX); Serial.print(";  "); 
-  Serial.print("CS_Effect_Type: "); Serial.print(CS_Effect_Type, DEC); Serial.print(";  "); 
-  Serial.print("CS_Preset_Number: "); Serial.print(CS_Preset_Number, DEC); Serial.print(";  "); 
-  Serial.print("CS_Effect_OBState: "); Serial.print(CS_Effect_OBState, HEX); Serial.print(";  ");
-  Serial.print("CS_Effect_XYState: "); Serial.print(CS_Effect_XYState, HEX); Serial.print(";  ");
-  Serial.print("LB: "); Serial.print(LB, HEX); Serial.print(";  ");
-  Serial.print("MB: "); Serial.print(MB, HEX); Serial.print(";  ");  
-  Serial.print("HB: "); Serial.print(HB, HEX); Serial.println(";");
-  Serial.println("///////////////////////////////////////////////////////////////");
-#endif*/            
-  Get_Send_Param_Values();  
+  
+  for( int k=0;    k < BCR2000_NumberOf_Controls_DEFINE    ;k++) { CP_Initial_Param_Value_received[k] = 0; }
+         
+  Get_Send_Param_Values();
+  
   // Manage 4 Effect state buttons
-  Manage4EffectStateButtons();  
-  Display_Control_Page();
-  send_uvga_D( 41 , 41, 41 );
-}
+  BCR2000_Manage4ButtonsState();
 
+  send_uVGA_B___Current_EffectType_ControlPage( ); // SENDs Current Effect Type infos // SubScreenType = 1 ==> Effect Type Control Page
+  send_uVGA___Control_Page_Parameters_Infos( );
+  send_uVGA_E___Screen_Type( EFFECT_TYPE_CONTROL_PAGE );
+  
+  // All parameter values have been send. Signal that the page can be displayed.
+  //send_uVGA_D___Init_Value( BCR2000_ENCODER_NUMBER + BCR2000_PUSH_BUT_NUMBER + 1, 0, 0 );
+}
 
 
 
@@ -1199,6 +1338,18 @@ byte Calculate_CheckSum( byte  *cur_sysex, int cur_size)
   return result;
 }
 
+
+//byte EffectType_of_EffectBlock( byte Effect_Block_ID )
+//{
+//  for(int k=0;    k < MAX_NUMBER_EFFECTS_BLOCK    ;k++)
+//  {
+//    if ( Effect_Block_ID == pgm_read_byte_near( PROGMEM_BYTE___AXEFX_Effect_Block_ID + k ) )
+//    {
+//      return pgm_read_byte_near( PROGMEM_BYTE___AXEFX_Effect_Block_to_Effect_Type_ID + k );
+//      break;
+//    }
+//  }
+//}
 
 
 

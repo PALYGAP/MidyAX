@@ -5,10 +5,6 @@
 // HARDWARE:    ARDUINO MEGA 128, 4 MIDI ports with a MIDI-IN and MIDI-OUT for each port.
 // CREATOR:     Eric FEUILLEAUBOIS
 // LICENSE:     GNU license v3 - That means OPEN SOFWARE, COPYLEFT and hope it's useful to you
-// IMPORTANT Softwares/documents from other people : 
-//              - ARDUINO MIDI LIBRARY by François Best
-//              - the BC MIDI Implementation.pdf by Mark van den Berg
-//              - and quite a few others
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -16,16 +12,25 @@
 #define DEBUG_H_
 
 
-  #define IN_DEBUG_MODE
+  //#define IN_DEBUG_MODE
   //#define DEBUG
   //#define DEBUG2
-  #define DEBUG3
-  //#define DEBUG4
+  //#define DEBUG3    // 30 Control pages select and button state
+  //#define DEBUG4    // BCR2000_Customize_Conf() 
   //#define DEBUG5
   //#define DEBUG6
   //#define DEBUG7
   //#define DEBUG_TEST
-  //#define DEBUG8 //Generation of the list of active parameter of an Effect Type
-
+  //#define DEBUG8    // Generation of the list of active parameter of an Effect Type
+  //#define DEBUG9    // Debug BCR2000 preset change
+  //#define DEBUG10   // Switch LOOPER functions for a uVGA screen capture utility on 
+  //#define DEBUG11   // send_uVGA___Control_Page_Parameters()
+  //#define DEBUG12   // AXE-FX message reception "timing"
+  //#define DEBUG13   // Debug Preset Name
+  //#define DEBUG14   // ON/Bybass
+  //#define DEBUG15   // SetLoad_CurrentControlPage
+  //#define DEBUG16   // Reception of parameter's initial values
   
 #endif // DEBUG_H_
+
+

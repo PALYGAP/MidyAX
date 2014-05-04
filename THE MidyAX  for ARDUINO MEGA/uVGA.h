@@ -8,19 +8,38 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-void OTHER_ManageCC ( byte CC_channel, byte CC_number, byte CC_value )
-{
-  // RECEIVING TEST CCs
-  if( CC_channel == OTHER_MIDI_CHANNEL && CC_number == MIDI_TEST_CC_SENT)
+
+#ifndef UVGA_H_
+#define UVGA_H_
+
+
+  enum ScreenType
   {
-    OTHER_Received_CC_Value = CC_value;
-    //Serial.print("Message : "); Serial.print(CC_value, DEC); Serial.print(" received");
-  }
-  return;
-} 
+    INIT_SCREEN = 1,
+    OPERATIONAL_PARAMETERS_SCREEN,
+    EFFECT_TYPE_CONTROL_PAGE,
+    QUICKACCESS_CONTROL_PAGE,
+    CUSTOM_EFFECT_TYPE_CONTROL_PAGE,
+    CUSTOM_QUICKACCESS_CONTROL_PAGE,
+    CUSTOM_QUICKACCESS_CONTROL_PAGE_EFFECTBLOCK,
+    LOOPER,
+    SPECIAL_FUNCTIONS_GEN_MENU,
+    SPECIAL_FUNCTIONS_1,
+    SPECIAL_FUNCTIONS_2,
+    SPECIAL_FUNCTIONS_3,
+    SPECIAL_FUNCTIONS_4,
+    SPECIAL_FUNCTIONS_5,
+  };
+  
+  enum Param_State
+  {
+    NO_PARAMETER = 0,
+    PARAMETER_NOT_ACTIVE,
+    PARAMETER_ACTIVE,
+  };
 
 
 
 
-
+#endif // UVGA_H_
 
